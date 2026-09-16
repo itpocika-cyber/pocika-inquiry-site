@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System — POCIKA Inquiry System</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ===== Header (reused markup across all pages) ===== -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a href="dashboard.html" class="app-logo">
+        <img src="../assets/logo/pocika-logo.png" alt="POCIKA Fire &amp; Safety Products LLP">
+        <span class="app-logo-text">POCIKA</span>
+      </a>
+      <nav class="main-nav" aria-label="Primary">
+        <a href="dashboard.html" class="main-nav-link">Dashboard</a>
+        <a href="inquiries.html" class="main-nav-link">Inquiries</a>
+        <a href="admin-dashboard.html" class="main-nav-link">Admin</a>
+        <a href="design-system.html" class="main-nav-link is-active">Design system</a>
+      </nav>
+      <div class="app-header-actions">
+        <div class="app-user-chip">
+          <span class="app-user-avatar">RS</span>
+          <span>Rahul Sharma</span>
+        </div>
+        <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-mobile-nav-toggle>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-nav-panel" data-mobile-nav-panel>
+      <a href="dashboard.html" class="mobile-nav-link">Dashboard</a>
+      <a href="inquiries.html" class="mobile-nav-link">Inquiries</a>
+      <a href="admin-dashboard.html" class="mobile-nav-link">Admin</a>
+      <a href="design-system.html" class="mobile-nav-link is-active">Design system</a>
+    </div>
+  </header>
+
+  <main class="container-app section-block">
+
+    <div class="mb-5">
+      <p class="text-helper mb-1">Internal reference</p>
+      <h1 class="text-page-title mb-2">POCIKA design system</h1>
+      <p class="text-muted-custom">Every color, type style, and component used across the Inquiry &amp; Site Visit Management System, so every screen stays consistent.</p>
+    </div>
+
+    <!-- ===== Colors ===== -->
+    <section class="mb-6" id="colors">
+      <h2 class="text-section-title mb-4">Colors</h2>
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-navy)"></div>
+          <div class="text-field-label">Navy</div><div class="text-helper">#0B1F33</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-primary)"></div>
+          <div class="text-field-label">Primary blue</div><div class="text-helper">#2563EB</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2 border" style="height:72px;background:var(--color-bg)"></div>
+          <div class="text-field-label">Background</div><div class="text-helper">#F5F7FA</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2 border" style="height:72px;background:var(--color-white)"></div>
+          <div class="text-field-label">White</div><div class="text-helper">#FFFFFF</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-text)"></div>
+          <div class="text-field-label">Text</div><div class="text-helper">#111827</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-text-muted)"></div>
+          <div class="text-field-label">Muted text</div><div class="text-helper">#6B7280</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-success)"></div>
+          <div class="text-field-label">Success</div><div class="text-helper">#16A34A</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-warning)"></div>
+          <div class="text-field-label">Warning</div><div class="text-helper">#D97706</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="rounded-3 mb-2" style="height:72px;background:var(--color-danger)"></div>
+          <div class="text-field-label">Danger</div><div class="text-helper">#DC2626</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Typography ===== -->
+    <section class="mb-6" id="typography">
+      <h2 class="text-section-title mb-4">Typography</h2>
+      <div class="card-pocika">
+        <div class="text-page-title mb-3">Page title — Inquiry &amp; Site Visit Management</div>
+        <div class="text-section-title mb-3">Section title — Customer / Business details</div>
+        <div class="text-field-label mb-3">Field label — Company / client name</div>
+        <p class="mb-3">Body text — Every field from the original paper form is preserved with the same business meaning, restructured for a guided digital flow.</p>
+        <div class="text-helper mb-3">Helper text — Used to explain a field without replacing its label.</div>
+        <div class="text-error">Error message — Enter a valid 10-digit mobile number.</div>
+      </div>
+    </section>
+
+    <!-- ===== Buttons ===== -->
+    <section class="mb-6" id="buttons">
+      <h2 class="text-section-title mb-4">Buttons</h2>
+      <div class="card-pocika d-flex flex-wrap gap-3 align-items-center">
+        <button class="btn-pocika btn-pocika-primary" type="button">Save &amp; continue</button>
+        <button class="btn-pocika btn-pocika-secondary" type="button">Back</button>
+        <button class="btn-pocika btn-pocika-ghost" type="button">Edit section</button>
+        <button class="btn-pocika btn-pocika-danger-ghost" type="button">Remove photo</button>
+        <button class="btn-pocika btn-pocika-primary" type="button" disabled>Disabled</button>
+      </div>
+    </section>
+
+    <!-- ===== Form controls ===== -->
+    <section class="mb-6" id="forms">
+      <h2 class="text-section-title mb-4">Form controls</h2>
+      <div class="card-pocika">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label" for="ds-text">Company / Client name<span class="required-mark">*</span></label>
+              <input class="form-control-pocika" id="ds-text" type="text" placeholder="e.g. Shree Industries">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group has-error">
+              <label class="field-label" for="ds-mobile">Mobile no.<span class="required-mark">*</span></label>
+              <input class="form-control-pocika is-invalid" id="ds-mobile" type="tel" value="98765">
+              <span class="field-error is-visible">Enter a valid 10-digit mobile number.</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label" for="ds-select">Facility</label>
+              <select class="form-select-pocika" id="ds-select">
+                <option>Factory</option>
+                <option>Warehouse</option>
+                <option>Office</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label" for="ds-date">Expected requirement date</label>
+              <input class="form-control-pocika" id="ds-date" type="date">
+              <span class="field-helper">Leave blank if not yet known.</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="field-group mb-0">
+              <label class="field-label" for="ds-textarea">Visit remarks / special requirements</label>
+              <textarea class="form-control-pocika" id="ds-textarea" placeholder="Any special notes from the site visit…"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Chip / selectable-card groups ===== -->
+    <section class="mb-6" id="chips">
+      <h2 class="text-section-title mb-4">Selectable chips &amp; cards</h2>
+      <div class="card-pocika mb-3">
+        <div class="text-field-label mb-3">Customer type (single-select)</div>
+        <div class="chip-group" role="radiogroup" aria-label="Customer type">
+          <label class="chip-option is-selected"><input type="radio" name="ds-customer-type" checked>GIDC / Industrial</label>
+          <label class="chip-option"><input type="radio" name="ds-customer-type">Developer / Builder</label>
+          <label class="chip-option"><input type="radio" name="ds-customer-type">Corporate</label>
+          <label class="chip-option"><input type="radio" name="ds-customer-type">Commercial</label>
+          <label class="chip-option"><input type="radio" name="ds-customer-type">Dealer / Distributor</label>
+          <label class="chip-option"><input type="radio" name="ds-customer-type">Retail / Other</label>
+        </div>
+      </div>
+      <div class="card-pocika">
+        <div class="text-field-label mb-3">Products required (multi-select)</div>
+        <div class="row g-2">
+          <div class="col-6 col-md-3">
+            <label class="product-card is-selected">
+              <input type="checkbox" checked>
+              <span class="product-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 22c-4 0-7-3-7-7 0-3 2-5 3-7 1 2 2 2 3 1-1-3 1-6 3-7 0 3 1 4 2 6 1 2 3 3 3 7 0 4-3 7-7 7z"/></svg>
+              </span>
+              <span class="product-card-label">ABC Fire Extinguisher</span>
+            </label>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="product-card">
+              <input type="checkbox">
+              <span class="product-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg>
+              </span>
+              <span class="product-card-label">Fire Hydrant</span>
+            </label>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="product-card">
+              <input type="checkbox">
+              <span class="product-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M6 7h12l1 4H5l1-4zM5 11h14v9H5z"/></svg>
+              </span>
+              <span class="product-card-label">Fire Alarm &amp; Detection</span>
+            </label>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="product-card">
+              <input type="checkbox">
+              <span class="product-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v6H4zM4 14h10v6H4zM17 14h3v6h-3z"/></svg>
+              </span>
+              <span class="product-card-label">PPE / Safety Products</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Badges ===== -->
+    <section class="mb-6" id="badges">
+      <h2 class="text-section-title mb-4">Badges — opportunity &amp; status</h2>
+      <div class="card-pocika d-flex flex-wrap gap-2">
+        <span class="badge-pocika badge-hot">Hot</span>
+        <span class="badge-pocika badge-warm">Warm</span>
+        <span class="badge-pocika badge-cold">Cold</span>
+        <span class="badge-pocika badge-future-potential">Future potential</span>
+        <span class="badge-pocika badge-dealer-development">Dealer development</span>
+        <span class="badge-pocika badge-no-requirement">No requirement</span>
+        <span class="badge-pocika badge-status-draft">Draft</span>
+        <span class="badge-pocika badge-status-submitted">Submitted</span>
+        <span class="badge-pocika badge-status-pending-review">Pending review</span>
+      </div>
+    </section>
+
+    <!-- ===== Alerts ===== -->
+    <section class="mb-6" id="alerts">
+      <h2 class="text-section-title mb-4">Alerts</h2>
+      <div class="d-flex flex-column gap-3">
+        <div class="alert-pocika alert-info">
+          <div><div class="alert-title">Draft restored</div>We recovered your last saved entry for this inquiry.</div>
+        </div>
+        <div class="alert-pocika alert-success">
+          <div><div class="alert-title">Inquiry submitted</div>PSI-2026-000042 has been recorded.</div>
+        </div>
+        <div class="alert-pocika alert-warning">
+          <div><div class="alert-title">Follow-up due soon</div>3 inquiries have a follow-up date within 2 days.</div>
+        </div>
+        <div class="alert-pocika alert-danger">
+          <div><div class="alert-title">Photo too large</div>site-photo-4.jpg is 8.2MB — the limit is 5MB per photo.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Cards ===== -->
+    <section class="mb-6" id="cards">
+      <h2 class="text-section-title mb-4">Cards</h2>
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <span class="stat-card-label">Total inquiries</span>
+            <span class="stat-card-value">128</span>
+            <span class="stat-card-trend">+12 this week</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <span class="stat-card-label">Hot opportunities</span>
+            <span class="stat-card-value">14</span>
+            <span class="stat-card-trend">Needs quotation</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="inquiry-card">
+            <div class="inquiry-card-top">
+              <div>
+                <div class="inquiry-card-number">PSI-2026-000042</div>
+                <div class="inquiry-card-meta">Shree Industries · Vatva GIDC</div>
+              </div>
+              <span class="badge-pocika badge-hot">Hot</span>
+            </div>
+            <div class="inquiry-card-meta">Next follow-up: 18 Sep 2026</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Stepper ===== -->
+    <section class="mb-6" id="stepper">
+      <h2 class="text-section-title mb-4">Form stepper</h2>
+      <div class="card-pocika">
+        <div class="stepper">
+          <div class="stepper-item is-complete"><span class="stepper-circle">✓</span><span class="stepper-label">Contact</span></div>
+          <div class="stepper-item is-complete"><span class="stepper-circle">✓</span><span class="stepper-label">Customer</span></div>
+          <div class="stepper-item is-active"><span class="stepper-circle">3</span><span class="stepper-label">Requirement</span></div>
+          <div class="stepper-item"><span class="stepper-circle">4</span><span class="stepper-label">Commercial</span></div>
+          <div class="stepper-item"><span class="stepper-circle">5</span><span class="stepper-label">Opportunity</span></div>
+          <div class="stepper-item"><span class="stepper-circle">6</span><span class="stepper-label">Follow-up</span></div>
+          <div class="stepper-item"><span class="stepper-circle">7</span><span class="stepper-label">Remarks</span></div>
+          <div class="stepper-item"><span class="stepper-circle">8</span><span class="stepper-label">Review</span></div>
+        </div>
+        <div class="stepper-mobile">
+          <div class="stepper-mobile-label">Step 3 of 8 — Product / Requirement</div>
+          <div class="stepper-mobile-track"><div class="stepper-mobile-fill" style="width:37.5%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Photo upload ===== -->
+    <section class="mb-6" id="photo-upload">
+      <h2 class="text-section-title mb-4">Photo upload</h2>
+      <div class="card-pocika">
+        <div class="photo-upload">
+          <svg class="photo-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h3l2-2h6l2 2h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <div class="photo-upload-title">Tap to take a photo or choose from gallery</div>
+          <div class="photo-upload-helper">Up to 5 photos · 5MB each · JPG or PNG</div>
+          <input type="file" accept="image/*" multiple>
+        </div>
+        <div class="photo-upload-counter">2 of 5 photos added</div>
+        <div class="photo-grid">
+          <div class="photo-thumb">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=200&h=200&fit=crop" alt="Site photo 1">
+            <span class="photo-thumb-size">1.2 MB</span>
+            <button class="photo-thumb-remove" type="button" aria-label="Remove photo">×</button>
+          </div>
+          <div class="photo-thumb">
+            <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&h=200&fit=crop" alt="Site photo 2">
+            <span class="photo-thumb-size">2.4 MB</span>
+            <button class="photo-thumb-remove" type="button" aria-label="Remove photo">×</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Table ===== -->
+    <section class="mb-6" id="table">
+      <h2 class="text-section-title mb-4">Table (desktop) → cards (mobile)</h2>
+      <div class="card-pocika d-none d-md-block p-0">
+        <table class="table mb-0 align-middle">
+          <thead>
+            <tr class="text-field-label">
+              <th class="px-4 py-3">Inquiry No.</th><th>Customer</th><th>Location</th><th>Opportunity</th><th>Next follow-up</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="px-4 py-3">PSI-2026-000042</td><td>Shree Industries</td><td>Vatva GIDC</td>
+              <td><span class="badge-pocika badge-hot">Hot</span></td><td>18 Sep 2026</td>
+              <td class="text-end px-4"><button class="btn-pocika btn-pocika-ghost">View</button></td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">PSI-2026-000041</td><td>Patel Warehousing</td><td>Sachin GIDC</td>
+              <td><span class="badge-pocika badge-warm">Warm</span></td><td>20 Sep 2026</td>
+              <td class="text-end px-4"><button class="btn-pocika btn-pocika-ghost">View</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-md-none d-flex flex-column gap-3">
+        <div class="inquiry-card">
+          <div class="inquiry-card-top">
+            <div><div class="inquiry-card-number">PSI-2026-000042</div><div class="inquiry-card-meta">Shree Industries · Vatva GIDC</div></div>
+            <span class="badge-pocika badge-hot">Hot</span>
+          </div>
+          <div class="inquiry-card-meta">Next follow-up: 18 Sep 2026</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== States ===== -->
+    <section class="mb-6" id="states">
+      <h2 class="text-section-title mb-4">Empty, loading &amp; success states</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="card-pocika text-center py-5">
+            <div class="text-field-label mb-2">No inquiries yet</div>
+            <p class="text-helper mb-3">Start your first site visit inquiry.</p>
+            <button class="btn-pocika btn-pocika-primary">+ New inquiry</button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-pocika text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status" style="width:2rem;height:2rem;"></div>
+            <div class="text-helper">Loading inquiries…</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card-pocika text-center py-5">
+            <div class="mb-2" style="font-size:2rem;color:var(--color-success)">✓</div>
+            <div class="text-field-label">Inquiry submitted</div>
+            <div class="text-helper">PSI-2026-000042</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Modal ===== -->
+    <section class="mb-6" id="modal">
+      <h2 class="text-section-title mb-4">Modal</h2>
+      <div class="card-pocika">
+        <button class="btn-pocika btn-pocika-secondary" data-bs-toggle="modal" data-bs-target="#dsModal">Open confirm dialog</button>
+      </div>
+    </section>
+
+    <div class="modal fade" id="dsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--color-border);">
+          <div class="modal-header" style="border-bottom:1px solid var(--color-border);">
+            <h3 class="text-section-title" style="font-size:1.125rem;">Discard this inquiry?</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted-custom mb-0">Everything entered so far will be lost. This can't be undone.</p>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid var(--color-border);">
+            <button class="btn-pocika btn-pocika-secondary" data-bs-dismiss="modal">Keep editing</button>
+            <button class="btn-pocika btn-pocika-danger-ghost" data-bs-dismiss="modal">Discard</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="app-footer">
+    <p class="app-footer-text">POCIKA Fire &amp; Safety Products LLP — internal sales tool prototype</p>
+  </footer>
+
+</div>
+
+<div class="toast-pocika" data-toast>Draft saved</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="../js/utils.js" type="module"></script>
+<script src="../js/app.js" type="module"></script>
+</body>
+</html>

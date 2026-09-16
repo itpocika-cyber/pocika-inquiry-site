@@ -1,0 +1,174 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+@use 'sass:color';
+
+.field-group {
+  margin-bottom: $space-5;
+}
+
+.field-label {
+  display: block;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text;
+  margin-bottom: $space-2;
+
+  .required-mark {
+    color: $color-danger;
+    margin-left: $space-1;
+  }
+}
+
+.field-helper {
+  display: block;
+  margin-top: $space-1;
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+}
+
+.field-error {
+  display: none;
+  margin-top: $space-1;
+  font-size: $font-size-xs;
+  color: $color-danger;
+  font-weight: $font-weight-medium;
+  align-items: center;
+  gap: $space-1;
+
+  &.is-visible { display: flex; }
+}
+
+// Shared visual treatment for text/select/textarea/date/number/tel/email
+.form-control-pocika,
+.form-select-pocika {
+  width: 100%;
+  min-height: 48px;
+  padding: $space-3 $space-4;
+  font-size: $font-size-base;
+  color: $color-text;
+  background-color: $color-white;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &::placeholder { color: $color-text-muted; }
+
+  &:hover { border-color: color.adjust($color-border, $lightness: -12%); }
+
+  @include focus-ring;
+  &:focus-visible { border-color: $color-primary; }
+
+  &.is-invalid {
+    border-color: $color-danger;
+
+    &:focus-visible { box-shadow: 0 0 0 3px rgba($color-danger, 0.18); }
+  }
+}
+
+.field-group.has-error {
+  .form-control-pocika,
+  .form-select-pocika { border-color: $color-danger; }
+
+  .field-error { display: flex; }
+}
+
+textarea.form-control-pocika {
+  min-height: 96px;
+  resize: vertical;
+}
+
+// Chip group — used for single/multi select-as-cards (Customer Type, Facility,
+// Products, Opportunity, Visit Type, Reason, Budget, etc.)
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.chip-option {
+  @include touch-target;
+  @include focus-ring;
+  cursor: pointer;
+  padding: $space-2 $space-4;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  background-color: $color-white;
+  color: $color-text;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  transition: all $transition-fast;
+  user-select: none;
+
+  input {
+    @include visually-hidden;
+  }
+
+  &:hover {
+    border-color: $color-primary;
+  }
+
+  &.is-selected {
+    background-color: $color-primary-soft;
+    border-color: $color-primary;
+    color: $color-primary-dark;
+  }
+}
+
+// Product selector — slightly larger touch card, icon + label
+.product-card {
+  @include focus-ring;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-4;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background-color: $color-white;
+  transition: all $transition-fast;
+
+  input { @include visually-hidden; }
+
+  .product-card-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-sm;
+    background-color: $color-bg;
+    color: $color-navy;
+  }
+
+  .product-card-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text;
+  }
+
+  &:hover { border-color: $color-primary; }
+
+  &.is-selected {
+    border-color: $color-primary;
+    background-color: $color-primary-soft;
+
+    .product-card-icon {
+      background-color: $color-primary;
+      color: $color-white;
+    }
+  }
+}
+
+// Form footer action bar — sticky on mobile
+.form-actions {
+  display: flex;
+  gap: $space-3;
+  padding-top: $space-5;
+  border-top: 1px solid $color-border;
+  margin-top: $space-6;
+
+  @include up($bp-md) {
+    justify-content: space-between;
+  }
+}

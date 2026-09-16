@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Inquiries — POCIKA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-header-inner">
+        <a href="dashboard.html" class="app-logo">
+          <img src="../assets/logo/pocika-logo.png" alt="POCIKA Fire & Safety Products LLP">
+          <span class="app-logo-text">POCIKA</span>
+        </a>
+        <nav class="main-nav" aria-label="Primary">
+          <a href="dashboard.html" class="main-nav-link">Dashboard</a>
+          <a href="inquiries.html" class="main-nav-link is-active">My Inquiries</a>
+        </nav>
+        <div class="app-header-actions">
+          <div class="app-user-chip">
+            <span class="app-user-avatar">DS</span>
+            <span>Demo Salesperson</span>
+          </div>
+          <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-mobile-nav-toggle>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-nav-panel" data-mobile-nav-panel>
+        <a href="dashboard.html" class="mobile-nav-link">Dashboard</a>
+        <a href="inquiries.html" class="mobile-nav-link is-active">My Inquiries</a>
+      </div>
+    </header>
+
+    <main class="container-app section-block">
+      
+      <!-- Header Section -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h1 class="text-page-title mb-1">My Inquiries</h1>
+          <p class="text-muted-custom mb-0">View and manage your submitted inquiry and site visit records.</p>
+        </div>
+        <div>
+          <a href="inquiry.html" class="btn-pocika btn-pocika-primary">+ New Inquiry</a>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="filters-toolbar">
+        <div style="flex: 1; min-width: 250px;">
+          <label class="field-label mb-1" style="font-size: 0.75rem;">Search</label>
+          <input type="text" id="search-input" class="form-control-pocika" placeholder="Search by No, Company, Location...">
+        </div>
+        
+        <div>
+          <label class="field-label mb-1" style="font-size: 0.75rem;">Opportunity</label>
+          <select id="filter-opportunity" class="form-control-pocika">
+            <option value="">All</option>
+            <option value="HOT">HOT</option>
+            <option value="WARM">WARM</option>
+            <option value="COLD">COLD</option>
+            <option value="FUTURE POTENTIAL">FUTURE POTENTIAL</option>
+            <option value="DEALER DEVELOPMENT">DEALER DEVELOPMENT</option>
+            <option value="NO REQUIREMENT">NO REQUIREMENT</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="field-label mb-1" style="font-size: 0.75rem;">Status</label>
+          <select id="filter-status" class="form-control-pocika">
+            <option value="">All</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Draft">Draft</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="field-label mb-1" style="font-size: 0.75rem;">Sort By</label>
+          <select id="sort-select" class="form-control-pocika">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="followup">Follow-up date</option>
+          </select>
+        </div>
+        
+        <div>
+          <button type="button" id="btn-clear-filters" class="btn-pocika btn-pocika-secondary">Clear</button>
+        </div>
+      </div>
+
+      <!-- Inquiries List -->
+      <div id="inquiries-results-wrapper">
+        <div class="card-pocika d-none d-md-block p-0 mb-4 table-wrapper" id="inquiries-desktop-container">
+          <table class="table mb-0 align-middle">
+            <thead>
+              <tr class="text-field-label">
+                <th class="px-4 py-3 border-bottom">Inquiry No.</th>
+                <th class="py-3 border-bottom">Date</th>
+                <th class="py-3 border-bottom">Customer</th>
+                <th class="py-3 border-bottom">Location</th>
+                <th class="py-3 border-bottom">Opportunity</th>
+                <th class="py-3 border-bottom">Status</th>
+                <th class="px-4 py-3 border-bottom"></th>
+              </tr>
+            </thead>
+            <tbody id="inquiries-tbody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="d-md-none d-flex flex-column gap-3 mb-4" id="inquiries-mobile">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div id="list-empty-state" class="d-none card-pocika text-center py-5">
+        <div class="mb-3" style="font-size:2rem;color:var(--color-text-muted)">🔍</div>
+        <h3 class="text-field-label fs-5 mb-2">No inquiries found</h3>
+        <p class="text-muted-custom mb-4">Try changing your search or filters.</p>
+        <button type="button" id="btn-empty-clear" class="btn-pocika btn-pocika-secondary">Clear Filters</button>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination-controls" class="d-none d-flex justify-content-center align-items-center gap-3">
+        <button type="button" id="btn-page-prev" class="btn-pocika btn-pocika-ghost" disabled>&laquo; Prev</button>
+        <span class="text-muted-custom" id="page-info">Page 1 of 1</span>
+        <button type="button" id="btn-page-next" class="btn-pocika btn-pocika-ghost" disabled>Next &raquo;</button>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p class="app-footer-text">POCIKA Fire & Safety Products LLP — internal sales tool prototype</p>
+    </footer>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="../js/inquiries.js"></script>
+  <script type="module" src="../js/app.js"></script>
+</body>
+</html>

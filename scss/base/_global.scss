@@ -1,0 +1,39 @@
+@use '../abstracts/variables' as *;
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container-app {
+  width: 100%;
+  max-width: $content-max-width;
+  margin-inline: auto;
+  padding-inline: $space-4;
+}
+
+// Reusable page section spacing
+.section-block {
+  padding-block: $space-6;
+}
+
+// Scrollbar restraint (subtle, not styled aggressively)
+::selection {
+  background: $color-primary-soft;
+}
+
+// Utility: visually hidden but focusable (skip links, sr-only labels)
+.sr-only-focusable {
+  &:not(:focus) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

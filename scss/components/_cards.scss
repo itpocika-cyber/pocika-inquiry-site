@@ -1,0 +1,68 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.card-pocika {
+  @include card-surface;
+  padding: $space-5;
+}
+
+.card-pocika-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-4;
+}
+
+// KPI / summary card used on dashboards
+.stat-card {
+  @include card-surface;
+  padding: $space-5;
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  .stat-card-label {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    font-weight: $font-weight-medium;
+  }
+
+  .stat-card-value {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    color: $color-navy;
+    line-height: 1;
+  }
+
+  .stat-card-trend {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+}
+
+// Inquiry list item (used both as table row on desktop and card on mobile)
+.inquiry-card {
+  @include card-surface;
+  padding: $space-4;
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  .inquiry-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $space-3;
+  }
+
+  .inquiry-card-number {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-navy;
+  }
+
+  .inquiry-card-meta {
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+  }
+}

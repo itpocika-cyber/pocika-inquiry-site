@@ -1,0 +1,29 @@
+{
+  "name": "pocika-inquiry-system",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "POCIKA Sales Inquiry & Site Visit Management System — static frontend (HTML/CSS/SCSS/Bootstrap5/vanilla JS). node_modules is a DEV-ONLY tool to compile SCSS to CSS; nothing here runs at runtime — the shipped app is plain HTML/CSS/JS you can open in any browser.",
+  "scripts": {
+    "build:css": "sass scss/main.scss css/main.css --no-source-map",
+    "watch:css": "sass --watch scss/main.scss css/main.css --no-source-map",
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "seed": "node server/scripts/seed.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "sass": "^1.77.0"
+  },
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.4.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.10.1",
+    "morgan": "^1.12.1",
+    "zod": "^4.6.5"
+  }
+}

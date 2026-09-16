@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquiry Submitted — POCIKA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-header-inner">
+        <a href="dashboard.html" class="app-logo">
+          <img src="../assets/logo/pocika-logo.png" alt="POCIKA Fire & Safety Products LLP">
+          <span class="app-logo-text">POCIKA</span>
+        </a>
+        <nav class="main-nav" aria-label="Primary">
+          <a href="dashboard.html" class="main-nav-link">Dashboard</a>
+          <a href="inquiries.html" class="main-nav-link is-active">Inquiries</a>
+          <a href="admin-dashboard.html" class="main-nav-link">Admin</a>
+          <a href="design-system.html" class="main-nav-link">Design system</a>
+        </nav>
+        <div class="app-header-actions">
+          <div class="app-user-chip">
+            <span class="app-user-avatar">RS</span>
+            <span>Rahul Sharma</span>
+          </div>
+          <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-mobile-nav-toggle>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-nav-panel" data-mobile-nav-panel>
+        <a href="dashboard.html" class="mobile-nav-link">Dashboard</a>
+        <a href="inquiries.html" class="mobile-nav-link is-active">Inquiries</a>
+        <a href="admin-dashboard.html" class="mobile-nav-link">Admin</a>
+        <a href="design-system.html" class="mobile-nav-link">Design system</a>
+      </div>
+    </header>
+
+    <main class="container-app section-block d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+      <div class="card-pocika text-center py-5 px-4 w-100" style="max-width: 600px;">
+        <div class="mb-3" style="font-size:3rem;color:var(--color-success)">✓</div>
+        <h1 class="text-page-title mb-2">Inquiry submitted successfully</h1>
+        <p class="text-muted-custom mb-4">This is a demo submission. Data is stored locally and has not been sent to any server.</p>
+        
+        <div class="mb-4">
+          <div class="text-helper">Inquiry No.</div>
+          <div class="text-field-label fs-5 mb-2" id="success-inquiry-no">...</div>
+          <div class="text-helper">Submitted on <span id="success-date">...</span></div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 form-actions mb-4">
+          <a href="inquiry-details.html" class="btn-pocika btn-pocika-secondary">View Inquiry</a>
+          <button type="button" class="btn-pocika btn-pocika-secondary btn-pdf-mock">Preview PDF</button>
+          <button type="button" class="btn-pocika btn-pocika-secondary btn-pdf-mock">Download PDF</button>
+        </div>
+        
+        <div>
+          <a href="inquiry.html" class="btn-pocika btn-pocika-primary w-100 w-sm-auto">Create New Inquiry</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p class="app-footer-text">POCIKA Fire & Safety Products LLP — internal sales tool prototype</p>
+    </footer>
+
+  </div>
+
+  <div class="toast-pocika" id="pdf-toast">PDF generation will be available once the backend is connected — this is a frontend prototype.</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { qs, qsa, formatDate } from '../js/utils.js';
+    import './app.js'; // for mobile nav
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const stored = sessionStorage.getItem('pocika_submitted_inquiry');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          const noEl = qs('#success-inquiry-no');
+          const dateEl = qs('#success-date');
+          
+          if (noEl) noEl.textContent = data.inquiryNumber || 'Unknown';
+          if (dateEl && data.submissionMeta) {
+            const dateObj = new Date(data.submissionMeta.confirmedAt);
+            dateEl.textContent = formatDate(dateObj);
+          }
+        } catch (e) {
+          console.error("Failed to parse submitted inquiry", e);
+        }
+      } else {
+        const noEl = qs('#success-inquiry-no');
+        if (noEl) noEl.textContent = 'Demo Mode (No data)';
+      }
+
+      // PDF Mocks
+      const pdfBtns = qsa('.btn-pdf-mock');
+      const toast = qs('#pdf-toast');
+      pdfBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (toast) {
+            toast.classList.add('is-visible');
+            setTimeout(() => {
+              toast.classList.remove('is-visible');
+            }, 3000);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
