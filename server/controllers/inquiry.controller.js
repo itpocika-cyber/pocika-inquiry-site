@@ -1,18 +1,28 @@
 import { Inquiry } from '../models/Inquiry.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
+import { generateOptimizedUrls } from '../config/cloudinary.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 
 export const createInquiry = async (req, res, next) => {
   try {
-    const data = req.validatedBody;
+    const data = { ...req.validatedBody };
     
-    // Generate unique ID
+    // Server-authoritative fields (prevent mass assignment)
     data.inquiryNumber = await generateInquiryNumber();
-    
-    // Force status to submitted on POST
     data.status = 'submitted';
+    
+    // Server-assigned ownership
+    data.createdBy = {
+      firebaseUid: req.user.firebaseUid,
+      email: req.user.email,
+      name: req.user.displayName || req.user.email
+    };
+
+    // Authoritative salesperson identity from logged-in session
+    data.salesPerson = req.user.displayName || req.user.email;
+
     data.submissionMeta = {
-      confirmedBy: 'System', // placeholder for future auth
+      confirmedBy: req.user.displayName || req.user.email,
       confirmedAt: new Date()
     };
     
@@ -34,6 +44,15 @@ export const getInquiries = async (req, res, next) => {
     // Filters & Search
     const query = {};
     
+    // Server-Side Authorization Scope
+    // Salespersons can only access their own inquiries
+    if (req.user.role === 'sales_person') {
+      query['createdBy.firebaseUid'] = req.user.firebaseUid;
+    } else if (req.query.salesPerson) {
+      // Admins/Managers can optionally filter by salesperson
+      query.salesPerson = req.query.salesPerson;
+    }
+
     // Search across multiple text fields
     if (req.query.search) {
       const searchRegex = new RegExp(req.query.search, 'i');
@@ -85,7 +104,7 @@ export const getInquiryById = async (req, res, next) => {
   try {
     // Attempt lookup by MongoDB _id or inquiryNumber
     let inquiry = null;
-    if (req.params.id.startsWith('PSI-')) {
+    if (req.params.id.startsWith('PSI-') || req.params.id.startsWith('INQ-')) {
       inquiry = await Inquiry.findOne({ inquiryNumber: req.params.id });
     } else {
       inquiry = await Inquiry.findById(req.params.id);
@@ -95,7 +114,25 @@ export const getInquiryById = async (req, res, next) => {
       return errorResponse(res, { code: 'NOT_FOUND', message: 'Inquiry not found' }, 404);
     }
 
-    return successResponse(res, inquiry);
+    // Authorization check: Salesperson can only view their own inquiries
+    if (req.user.role === 'sales_person') {
+      if (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid !== req.user.firebaseUid) {
+        return errorResponse(res, {
+          code: 'FORBIDDEN',
+          message: 'Access denied. You do not have permission to view this inquiry.'
+        }, 403);
+      }
+    }
+
+    const inquiryObj = inquiry.toObject();
+    if (inquiryObj.photos && inquiryObj.photos.length > 0) {
+      inquiryObj.photos = inquiryObj.photos.map(p => ({
+        ...p,
+        optimizedUrls: generateOptimizedUrls(p.publicId, p.secureUrl)
+      }));
+    }
+
+    return successResponse(res, inquiryObj);
   } catch (error) {
     next(error);
   }
@@ -103,28 +140,50 @@ export const getInquiryById = async (req, res, next) => {
 
 export const updateInquiry = async (req, res, next) => {
   try {
-    // Only allow specific fields to be updated in this phase.
-    const allowedUpdates = ['visit.opportunity', 'followUp.nextAction', 'followUp.followUpDate', 'remarks', 'status'];
-    const updateData = {};
-    
-    Object.keys(req.body).forEach(key => {
-      if (allowedUpdates.includes(key)) {
-        updateData[key] = req.body[key];
-      }
-    });
-
+    // Lookup inquiry first to check permissions
     let inquiry = null;
-    if (req.params.id.startsWith('PSI-')) {
-      inquiry = await Inquiry.findOneAndUpdate({ inquiryNumber: req.params.id }, { $set: updateData }, { new: true });
+    if (req.params.id.startsWith('PSI-') || req.params.id.startsWith('INQ-')) {
+      inquiry = await Inquiry.findOne({ inquiryNumber: req.params.id });
     } else {
-      inquiry = await Inquiry.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true });
+      inquiry = await Inquiry.findById(req.params.id);
     }
 
     if (!inquiry) {
       return errorResponse(res, { code: 'NOT_FOUND', message: 'Inquiry not found' }, 404);
     }
 
-    return successResponse(res, inquiry);
+    // Authorization check: Salesperson can only update their own inquiries
+    if (req.user.role === 'sales_person') {
+      if (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid !== req.user.firebaseUid) {
+        return errorResponse(res, {
+          code: 'FORBIDDEN',
+          message: 'Access denied. You do not have permission to modify this inquiry.'
+        }, 403);
+      }
+    }
+
+    // Strict allowlist of updatable fields (mass assignment protection)
+    const allowedUpdates = ['visit.opportunity', 'followUp.nextAction', 'followUp.followUpDate', 'remarks'];
+    
+    // Only Admin/Super Admin can update status
+    if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+      allowedUpdates.push('status');
+    }
+
+    const updateData = {};
+    Object.keys(req.body).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        updateData[key] = req.body[key];
+      }
+    });
+
+    const updatedInquiry = await Inquiry.findByIdAndUpdate(
+      inquiry._id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    return successResponse(res, updatedInquiry);
   } catch (error) {
     next(error);
   }
@@ -133,27 +192,47 @@ export const updateInquiry = async (req, res, next) => {
 export const getSummary = async (req, res, next) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];
+    const baseQuery = { status: 'submitted' };
+    
+    // Scope summary to salesperson's inquiries if user is sales_person
+    if (req.user.role === 'sales_person') {
+      baseQuery['createdBy.firebaseUid'] = req.user.firebaseUid;
+    }
     
     // Total count
-    const total = await Inquiry.countDocuments({ status: 'submitted' });
+    const total = await Inquiry.countDocuments(baseQuery);
     
     // Today count
-    const today = await Inquiry.countDocuments({ date: todayStr, status: 'submitted' });
+    const today = await Inquiry.countDocuments({ ...baseQuery, date: todayStr });
     
     // Hot count
-    const hot = await Inquiry.countDocuments({ 'visit.opportunity': 'HOT', status: 'submitted' });
-    
+    const hot = await Inquiry.countDocuments({ ...baseQuery, 'visit.opportunity': 'HOT' });
+
+    // Warm count
+    const warm = await Inquiry.countDocuments({ ...baseQuery, 'visit.opportunity': 'WARM' });
+
     // Pending Follow-ups
     const pendingFollowUps = await Inquiry.countDocuments({
-      'followUp.followUpDate': { $gte: todayStr },
-      status: 'submitted'
+      ...baseQuery,
+      'followUp.followUpDate': { $gte: todayStr }
+    });
+
+    // Quotes count
+    const quotes = await Inquiry.countDocuments({
+      ...baseQuery,
+      $or: [
+        { 'followUp.nextAction': { $in: ['Submit Quotation', 'Send Quote', 'Quotation'] } },
+        { 'followUp.quotationDate': { $ne: '' } }
+      ]
     });
 
     return successResponse(res, {
       total,
       today,
       hot,
-      pendingFollowUps
+      warm,
+      pendingFollowUps,
+      quotes
     });
   } catch (error) {
     next(error);

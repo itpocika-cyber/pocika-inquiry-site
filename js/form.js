@@ -5,6 +5,7 @@ import { initConditionalFields } from './conditional-fields.js';
 import { initDraft, saveDraftDebounced } from './draft.js';
 import { initPhotoUpload } from './photo-upload.js';
 import { initReview } from './review.js';
+import { waitForAuth } from './auth.js';
 
 // The centralized state for this inquiry form
 export const inquiryData = {
@@ -98,4 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initConditionalFields();
   initPhotoUpload();
   initReview();
+
+  // Automatically assign salesperson from logged-in user session
+  waitForAuth().then(user => {
+    if (user) {
+      inquiryData.salesPerson = user.displayName || user.email;
+    }
+  });
 });

@@ -1,13 +1,16 @@
 import { qs, qsa, debounce, formatDate } from './utils.js';
 import { api } from './api.js';
+import { waitForAuth } from './auth.js';
 
 let filteredInquiries = [];
 let currentPage = 1;
 const ITEMS_PER_PAGE = 10;
 let totalPages = 1;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initFilters();
+  const user = await waitForAuth();
+  if (!user) return; // app.js handles redirection
   fetchAndRenderList();
 });
 

@@ -1,81 +1,116 @@
 # POCIKA Inquiry & Site Visit Management System
 
 ## Project Purpose
-This project is a dedicated Sales Inquiry and Site Visit Management System for **POCIKA FIRE & SAFETY PRODUCTS LLP**. It enables salespeople to rapidly log site visits, collect customer requirements, and upload photos while on the field. It also provides managers and admins with dashboards to track opportunities and follow-ups.
+This project is a dedicated Sales Inquiry and Site Visit Management System for **POCIKA FIRE & SAFETY PRODUCTS LLP**. It enables salespeople to rapidly log site visits, collect customer requirements, and attach photos while on the field. It also provides sales managers and administrators with dashboards to track opportunities, follow-ups, and inquiry records with strict data isolation and role-based permissions.
 
-## Current Technology
-This project is currently a **Frontend-Only Prototype** (Phase 6).
-- HTML5
-- CSS3 (Compiled via SCSS)
-- Bootstrap 5 (via CDN)
-- Vanilla JavaScript ES6+ (Modules)
-- NO frameworks (React, Vue, etc.)
-- NO active backend (Node/Express/MongoDB) yet.
+---
 
-## How to Run
-1. Open a terminal in the project root.
-2. Run a local web server (e.g., `npx serve .` or `python -m http.server`).
-3. Navigate to `http://localhost:3000/pages/dashboard.html`.
+## Architecture & Technology Stack
 
-## Project Structure
+### Frontend Architecture
+- **HTML5 & Vanilla JavaScript (ES6+ Modules)**
+- **CSS3 / SCSS** with tailored Apple-inspired, professional dark navy & crimson design system
+- **Bootstrap 5.3** for layout and responsive grids
+- **Firebase Client SDK (v10.8.1 Modular)** for Google Sign-In and session tokens
+
+### Backend Architecture
+- **Node.js & Express 5** RESTful API
+- **Firebase Admin SDK (v14.4.0)** for server-side token signature and expiry verification
+- **MongoDB & Mongoose (v9.10.1)** for data persistence, User model, and Inquiry model
+- **Zod (v4.6.5)** for declarative runtime request validation
+- **Helmet & Strict CORS** for security header enforcement and cross-origin protection
+
+---
+
+## Phase 8: Authentication & Authorization (RBAC)
+
+### Flow
+1. **Google Sign-In**: User logs in with Google on `pages/login.html` using Firebase Client SDK.
+2. **ID Token**: Client acquires a fresh Firebase ID Token.
+3. **API Request**: Centralized `api.js` client attaches `Authorization: Bearer <ID Token>` to all requests.
+4. **Backend Verification**: `server/middleware/auth.js` verifies the token via Firebase Admin SDK.
+5. **Authoritative User & RBAC**: The user's role (`super_admin`, `admin`, `sales_person`, `manager`) and status (`isActive`) are fetched from MongoDB.
+6. **Data Isolation**:
+   - **Salesperson**: Queries are automatically scoped to inquiries where `createdBy.firebaseUid` matches their UID. Access to other inquiries returns `403 Forbidden`.
+   - **Admin / Super Admin**: Access to all inquiries across sales teams and the Admin Dashboard.
+7. **Protected Pages**: Direct URL access to `admin-dashboard.html` or other protected views verifies the authoritative role.
+
+---
+
+## Getting Started
+
+### 1. Prerequisites
+- Node.js 18+ installed
+- MongoDB connection string (`MONGODB_URI`)
+- Firebase project with Google Authentication enabled
+
+### 2. Environment Configuration
+Copy `.env.example` to `.env` and fill in the required credentials:
+```bash
+PORT=5000
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/pocika_inquiry_system
+NODE_ENV=development
+CLIENT_ORIGIN=http://localhost:3000
+
+FIREBASE_PROJECT_ID=pocika-sales-inquiry-system
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@pocika-sales-inquiry-system.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
-/
-├── assets/             # Logos, placeholder images
-├── css/                # Compiled CSS (main.css)
-├── scss/               # Source SCSS files (main.scss, components, etc.)
-├── js/                 # Vanilla JS Modules
-│   ├── app.js          # Main entry (DOM listeners)
-│   ├── utils.js        # Helpers (debounce, dates, DOM queries)
-│   ├── form.js         # Central data model (inquiryData)
-│   ├── draft.js        # LocalStorage saving/restoring
-│   ├── steps.js        # Multi-step navigation logic
-│   ├── validation.js   # Form validation rules
-│   ├── conditional-fields.js # Show/hide logic
-│   ├── photo-upload.js # Local photo preview logic
-│   ├── review.js       # Step 8 dynamic rendering
-│   ├── dashboard.js    # Sales Dashboard logic
-│   ├── inquiries.js    # "My Inquiries" List & Filter logic
-│   ├── admin-dashboard.js # Admin List & Filter logic
-│   └── mock-data.js    # 30+ synthetic records for testing
-├── pages/              # HTML Views
-│   ├── dashboard.html
-│   ├── inquiry.html
-│   ├── success.html
-│   ├── inquiries.html
-│   └── admin-dashboard.html
-├── docs/               # Architecture & QA Documentation
-│   ├── field-mapping.md
-│   └── design-system.md
-└── README.md
+
+---
+
+## Phase 9: Cloudinary Media Architecture
+- **Sole Media Storage**: Cloudinary is the exclusive cloud image and media storage layer.
+- **Dynamic Delivery Variants**: Generates on-the-fly optimized variants:
+  - `thumbnail`: 250×250 face/content crop for cards and previews
+  - `preview`: 900px wide responsive image for modal inspections
+  - `full`: Lossless/optimized original for high-res downloads
+  - `pdf`: 1200px print-optimized variant for future Quotation / PDF generation
+- **Zero Base64 in Database**: MongoDB exclusively persists photo metadata (`publicId`, `secureUrl`, dimensions, file size, uploader identity).
+- **Safe Drafts**: Photos are retained in local memory during draft editing and only uploaded to Cloudinary on explicit submission.
+- **Compensating Rollback**: Automatic cleanup deletes newly uploaded Cloudinary assets if MongoDB persistence fails.
+
+### 3. Run Backend API Server
+```bash
+npm run dev
+# Starts API server on http://localhost:5000
 ```
 
-## SCSS Architecture
-Because there is no build step configured for this frontend prototype, changes to `.scss` files require a manual compilation step (e.g. `sass scss/main.scss css/main.css`). The browser only reads `css/main.css`.
+### 4. Run Frontend Application
+```bash
+npx serve .
+# Serves application on http://localhost:3000
+# Open http://localhost:3000/pages/login.html
+```
 
-## JavaScript Architecture
-The application uses modern ES6 modules. Each file isolates a specific concern (validation, drafts, UI steps). State is primarily managed centrally via the exported `inquiryData` object in `form.js`. 
+### 5. Run Automated Test Suite
+```bash
+npm test
+# Executes the 32-scenario Phase 8 automated test suite
+```
 
-## Data Model
-There is ONE canonical data structure representing an inquiry, closely mirroring the original POCIKA PDF form. See `docs/field-mapping.md` for exact mapping.
+---
 
-## LocalStorage & SessionStorage Usage
-- **LocalStorage (`pocika_inquiry_draft`)**: Used to auto-save form progress.
-- **SessionStorage (`pocika_submission`)**: Used to pass data briefly from the `inquiry.html` form to the `success.html` confirmation page.
+## Provisioning User Roles
 
-## Mock Data
-The `mock-data.js` file contains 30 fictional records representing various salespersons, products, and opportunity types to facilitate robust testing of filters, search, and sorting.
+To assign or change user roles (`super_admin`, `admin`, `sales_person`, `manager`):
+```bash
+node server/scripts/seed-users.js <firebaseUid> <email> <role> [displayName]
+```
+Example:
+```bash
+node server/scripts/seed-users.js 123456 admin@pocika.com admin "Admin User"
+```
 
-## Current Limitations (Important)
-- **Frontend-only**: Refreshing list pages resets all filters.
-- **Mock data**: Data displayed in tables is hardcoded (combined with temporary session drafts).
-- **No real authentication**: Admin areas are accessible simply via URL routing.
-- **No backend/database**: Photos uploaded are only stored as local object URLs and will disappear on refresh.
-- **No real PDF generation**: The system does not yet produce downloadable PDFs.
+---
 
-## Future Backend Architecture (Contract)
-The frontend prepares for integration with:
-- **Node.js / Express**: REST APIs.
-- **MongoDB**: To store the canonical `inquiryData` object.
-- **Firebase Authentication**: For Sales vs. Admin roles.
-- **Firebase Storage**: For persisting uploaded JPG/PNG site photos.
-- **Puppeteer**: To consume the MongoDB JSON data and render a PDF matching the original company form.
+## Documentation
+- [Authentication Architecture](docs/authentication.md)
+- [Authorization & RBAC](docs/authorization.md)
+- [Security Architecture](docs/security.md)
+- [Canonical Field Mapping](docs/field-mapping.md)
+- [Design System](docs/design-system.md)

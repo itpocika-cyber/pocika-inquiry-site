@@ -35,6 +35,39 @@ export const errorHandler = (err, req, res, next) => {
     }, 404);
   }
 
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return errorResponse(res, {
+        code: 'FILE_TOO_LARGE',
+        message: 'File size exceeds maximum limit of 10MB per photo.'
+      }, 400);
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return errorResponse(res, {
+        code: 'TOO_MANY_FILES',
+        message: 'Maximum 5 photos can be uploaded at a time.'
+      }, 400);
+    }
+    return errorResponse(res, {
+      code: 'UPLOAD_ERROR',
+      message: err.message
+    }, 400);
+  }
+
+  if (err.code === 'INVALID_FILE_TYPE') {
+    return errorResponse(res, {
+      code: 'INVALID_FILE_TYPE',
+      message: err.message
+    }, 400);
+  }
+
+  if (err.message && (err.message.includes('buffering timed out') || err.message.includes('Could not connect to any servers in your MongoDB Atlas cluster'))) {
+    return errorResponse(res, {
+      code: 'DATABASE_TIMEOUT',
+      message: 'MongoDB connection timed out. Please verify that your current IP address is whitelisted in MongoDB Atlas Network Access (or set to 0.0.0.0/0).'
+    }, 503);
+  }
+
   return errorResponse(res, {
     code: 'SERVER_ERROR',
     message: err.message || 'Server Error'

@@ -6,15 +6,27 @@ import {
   updateInquiry,
   getSummary
 } from '../controllers/inquiry.controller.js';
+import {
+  uploadMiddleware,
+  uploadInquiryPhotos,
+  getInquiryPhotos,
+  deleteInquiryPhoto
+} from '../controllers/upload.controller.js';
 import { validateInquiry } from '../validators/inquiry.validator.js';
-import { requireAuth } from '../middleware/auth.js';
+import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/summary', requireAuth, getSummary); // must be before /:id
-router.post('/', requireAuth, validateInquiry, createInquiry);
-router.get('/', requireAuth, getInquiries);
-router.get('/:id', requireAuth, getInquiryById);
-router.patch('/:id', requireAuth, updateInquiry);
+// All inquiry endpoints require authentication
+router.get('/summary', authenticateUser, getSummary);
+router.post('/', authenticateUser, validateInquiry, createInquiry);
+router.get('/', authenticateUser, getInquiries);
+router.get('/:id', authenticateUser, getInquiryById);
+router.patch('/:id', authenticateUser, updateInquiry);
+
+// Photo endpoints
+router.post('/:id/photos', authenticateUser, uploadMiddleware, uploadInquiryPhotos);
+router.get('/:id/photos', authenticateUser, getInquiryPhotos);
+router.delete('/:id/photos/:photoId', authenticateUser, deleteInquiryPhoto);
 
 export default router;

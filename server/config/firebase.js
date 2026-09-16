@@ -1,5 +1,8 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { config } from './env.js';
+
+let authInstance = null;
 
 export const initFirebase = () => {
   if (!config.firebase.projectId || !config.firebase.clientEmail || !config.firebase.privateKey) {
@@ -7,16 +10,19 @@ export const initFirebase = () => {
     return null;
   }
 
+  if (authInstance) return authInstance;
+
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    const app = initializeApp({
+      credential: cert({
         projectId: config.firebase.projectId,
         clientEmail: config.firebase.clientEmail,
         privateKey: config.firebase.privateKey,
       }),
     });
     console.log('Firebase Admin initialized successfully.');
-    return admin;
+    authInstance = getAuth(app);
+    return authInstance;
   } catch (error) {
     console.error('Firebase initialization error:', error.message);
     return null;

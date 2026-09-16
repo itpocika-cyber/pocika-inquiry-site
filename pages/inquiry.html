@@ -19,14 +19,19 @@
         </a>
         <nav class="main-nav" aria-label="Primary">
           <a href="dashboard.html" class="main-nav-link">Dashboard</a>
-          <a href="inquiries.html" class="main-nav-link is-active">Inquiries</a>
-          <a href="admin-dashboard.html" class="main-nav-link">Admin</a>
-          <a href="design-system.html" class="main-nav-link">Design system</a>
+          <a href="inquiries.html" class="main-nav-link">My Inquiries</a>
         </nav>
         <div class="app-header-actions">
-          <div class="app-user-chip">
-            <span class="app-user-avatar">RS</span>
-            <span>Rahul Sharma</span>
+          <div class="dropdown">
+            <div class="app-user-chip dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="app-user-avatar">DS</span>
+              <span class="d-none d-sm-inline">Demo Salesperson</span>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; margin-top: 8px;">
+              <li><a class="dropdown-item py-2" href="#">Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item py-2 text-danger fw-medium" id="btn-logout">Logout</button></li>
+            </ul>
           </div>
           <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-mobile-nav-toggle>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -35,9 +40,7 @@
       </div>
       <div class="mobile-nav-panel" data-mobile-nav-panel>
         <a href="dashboard.html" class="mobile-nav-link">Dashboard</a>
-        <a href="inquiries.html" class="mobile-nav-link is-active">Inquiries</a>
-        <a href="admin-dashboard.html" class="mobile-nav-link">Admin</a>
-        <a href="design-system.html" class="mobile-nav-link">Design system</a>
+        <a href="inquiries.html" class="mobile-nav-link">My Inquiries</a>
       </div>
     </header>
 
@@ -84,12 +87,6 @@
                   <div class="field-group">
                     <label class="field-label">Date</label>
                     <input class="form-control-pocika" type="date" name="date" id="field-date">
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="field-group">
-                    <label class="field-label">Sales Person</label>
-                    <input class="form-control-pocika" type="text" name="salesPerson">
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -494,7 +491,7 @@
                   <div class="photo-upload" id="photo-drop-zone">
                     <svg class="photo-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h3l2-2h6l2 2h3v13H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
                     <div class="photo-upload-title">Tap to take a photo or choose from gallery</div>
-                    <div class="photo-upload-helper">Up to 5 photos · 5MB each · JPG or PNG</div>
+                    <div class="photo-upload-helper">Up to 5 photos · JPG or PNG</div>
                     <input type="file" id="photo-input" accept="image/jpeg, image/png" capture="environment" multiple>
                   </div>
                   <div id="photo-error" class="field-error mt-2"></div>

@@ -72,14 +72,35 @@ const inquirySchema = new mongoose.Schema({
   remarks: { type: String, default: "" },
   
   photos: [{
-    fileName: String,
-    sizeKB: Number,
-    previewUrl: String // In future, this will be Firebase Storage URL
+    photoId: { type: String, required: true },
+    publicId: { type: String, required: true },
+    secureUrl: { type: String, required: true },
+    resourceType: { type: String, default: 'image' },
+    format: { type: String, default: 'jpg' },
+    width: { type: Number, default: 0 },
+    height: { type: Number, default: 0 },
+    bytes: { type: Number, default: 0 },
+    originalFileName: { type: String, default: '' },
+    fileName: { type: String, default: '' }, // backwards compatibility
+    previewUrl: { type: String, default: '' }, // backwards compatibility
+    sizeKB: { type: Number, default: 0 }, // backwards compatibility
+    uploadedBy: {
+      firebaseUid: { type: String, required: true },
+      email: { type: String, required: true }
+    },
+    uploadedAt: { type: Date, default: Date.now },
+    sortOrder: { type: Number, default: 0 }
   }],
   
   submissionMeta: {
     confirmedBy: { type: String, default: 'System' },
     confirmedAt: { type: Date, default: Date.now }
+  },
+
+  createdBy: {
+    firebaseUid: { type: String, required: true, index: true },
+    email: { type: String, required: true },
+    name: { type: String, default: '' }
   }
 }, {
   timestamps: true // adds createdAt, updatedAt
@@ -93,5 +114,6 @@ inquirySchema.index({ 'visit.opportunity': 1 });
 inquirySchema.index({ 'followUp.followUpDate': 1 });
 inquirySchema.index({ date: 1 });
 inquirySchema.index({ status: 1 });
+inquirySchema.index({ 'createdBy.firebaseUid': 1 });
 
 export const Inquiry = mongoose.model('Inquiry', inquirySchema);

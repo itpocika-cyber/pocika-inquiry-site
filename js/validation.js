@@ -1,4 +1,5 @@
 import { qs, qsa } from './utils.js';
+import { inquiryData } from './form.js';
 
 export function initValidation() {
   const form = qs('#inquiry-form');
@@ -67,6 +68,17 @@ export function validateStep(stepIndex) {
       } else {
         groupDiv.classList.remove('has-error');
         if (errorSpan) errorSpan.classList.remove('is-visible');
+      }
+    }
+  }
+  // Special check for photos in step 7
+  if (stepIndex === 7) {
+    if (inquiryData.visit && inquiryData.visit.photos === 'Taken' && inquiryData.photos.length === 0) {
+      isValid = false;
+      const errorEl = qs('#photo-error');
+      if (errorEl) {
+        errorEl.textContent = 'Please upload at least 1 photo, up to 5.';
+        errorEl.classList.add('is-visible');
       }
     }
   }

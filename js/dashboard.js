@@ -1,8 +1,13 @@
 import { qs, formatDate } from './utils.js';
 import { api } from './api.js';
+import { waitForAuth } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   initDraftAlert();
+  
+  // Wait for auth initialization
+  const user = await waitForAuth();
+  if (!user) return; // app.js handles redirection
   
   try {
     const summaryRes = await api.getSummary();

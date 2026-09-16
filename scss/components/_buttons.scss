@@ -25,8 +25,14 @@
 .btn-pocika-primary {
   background-color: $color-primary;
   color: $color-white;
+  transition: all $transition-fast;
 
-  &:hover { background-color: $color-primary-dark; color: $color-white; }
+  &:hover { 
+    background-color: $color-primary-dark; 
+    color: $color-white; 
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($color-primary, 0.25);
+  }
 }
 
 .btn-pocika-secondary {

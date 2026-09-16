@@ -3,7 +3,26 @@ import { inquiryData } from './form.js';
 import { saveDraftDebounced } from './draft.js';
 
 const MAX_PHOTOS = 5;
-const MAX_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// In-memory array of selected File objects to upload upon form submission
+let selectedPhotoFiles = [];
+
+export function getSelectedPhotoFiles() {
+  return selectedPhotoFiles;
+}
+
+export function clearSelectedPhotos() {
+  inquiryData.photos.forEach(p => {
+    if (p.previewUrl && p.previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(p.previewUrl);
+    }
+  });
+  selectedPhotoFiles = [];
+  inquiryData.photos = [];
+  renderThumbnails();
+}
 
 export function initPhotoUpload() {
   const dropZone = qs('#photo-drop-zone');
@@ -49,102 +68,68 @@ export function initPhotoUpload() {
 
   // Clear photos event from conditional fields
   window.addEventListener('clear-photos', () => {
-    inquiryData.photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
-    inquiryData.photos = [];
-    renderThumbnails();
+    clearSelectedPhotos();
     saveDraftDebounced();
   });
 
-  // Render initial photos if restored from draft
+  // Render initial photos if restored
   renderThumbnails();
 }
 
-async function handleFiles(files) {
+function handleFiles(files) {
   const errorEl = qs('#photo-error');
-  errorEl.textContent = '';
-  errorEl.classList.remove('is-visible');
+  if (errorEl) {
+    errorEl.textContent = '';
+    errorEl.classList.remove('is-visible');
+  }
 
-  const newFiles = Array.from(files);
+  const incomingFiles = Array.from(files);
   let errorMsg = '';
 
-  for (const file of newFiles) {
-    if (inquiryData.photos.length >= MAX_PHOTOS) {
+  for (const file of incomingFiles) {
+    if (selectedPhotoFiles.length >= MAX_PHOTOS) {
       errorMsg = `Maximum ${MAX_PHOTOS} photos allowed.`;
       break;
     }
 
-    if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
-      errorMsg = `${file.name} is not a valid JPG/PNG image.`;
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      errorMsg = `${file.name}: Invalid file format. Please upload JPEG, PNG, or WebP images.`;
       break;
     }
 
-    const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > MAX_SIZE_MB) {
-      errorMsg = `${file.name} is too large (${sizeMB.toFixed(1)}MB). Max ${MAX_SIZE_MB}MB allowed.`;
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      errorMsg = `${file.name}: File size exceeds 10MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`;
       break;
     }
 
-    // Add loading placeholder
+    selectedPhotoFiles.push(file);
+
     const sizeKB = Math.round(file.size / 1024);
-    const photoEntry = {
+    const previewUrl = URL.createObjectURL(file);
+
+    inquiryData.photos.push({
       fileName: file.name,
-      previewUrl: URL.createObjectURL(file), // temp local url
-      sizeKB: sizeKB,
-      uploading: true
-    };
-    inquiryData.photos.push(photoEntry);
-    renderThumbnails();
-
-    try {
-      // Fetch Signature
-      const { api } = await import('./api.js');
-      const sigRes = await api.getUploadSignature();
-      const { signature, timestamp, apiKey, cloudName, folder } = sigRes.data;
-
-      // Upload to Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('api_key', apiKey);
-      formData.append('timestamp', timestamp);
-      formData.append('signature', signature);
-      formData.append('folder', folder);
-
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!uploadRes.ok) throw new Error('Cloudinary upload failed');
-
-      const data = await uploadRes.json();
-      
-      // Update entry with real URL
-      URL.revokeObjectURL(photoEntry.previewUrl);
-      photoEntry.previewUrl = data.secure_url;
-      photoEntry.uploading = false;
-      
-      saveDraftDebounced();
-      renderThumbnails();
-    } catch (err) {
-      console.error('Upload Error:', err);
-      // Remove failed upload
-      inquiryData.photos = inquiryData.photos.filter(p => p !== photoEntry);
-      renderThumbnails();
-      errorEl.textContent = `Failed to upload ${file.name}. Please try again.`;
-      errorEl.classList.add('is-visible');
-    }
+      previewUrl: previewUrl,
+      sizeKB: sizeKB
+    });
   }
 
-  if (errorMsg) {
+  if (errorMsg && errorEl) {
     errorEl.textContent = errorMsg;
     errorEl.classList.add('is-visible');
   }
+
+  renderThumbnails();
+  saveDraftDebounced();
 }
 
 function removePhoto(index) {
-  if (index >= 0 && index < inquiryData.photos.length) {
+  if (index >= 0 && index < selectedPhotoFiles.length) {
     const photo = inquiryData.photos[index];
-    URL.revokeObjectURL(photo.previewUrl);
+    if (photo && photo.previewUrl && photo.previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(photo.previewUrl);
+    }
+    selectedPhotoFiles.splice(index, 1);
     inquiryData.photos.splice(index, 1);
     saveDraftDebounced();
     renderThumbnails();
@@ -163,24 +148,15 @@ function renderThumbnails() {
     thumb.className = 'photo-thumb';
     
     let sizeText = photo.sizeKB > 1024 ? `${(photo.sizeKB / 1024).toFixed(1)} MB` : `${photo.sizeKB} KB`;
-    
-    const loadingOverlay = photo.uploading ? `
-      <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white" style="opacity: 0.8; z-index: 5;">
-        <div class="spinner-border spinner-border-sm text-primary" role="status">
-          <span class="visually-hidden">Uploading...</span>
-        </div>
-      </div>
-    ` : '';
 
     thumb.innerHTML = `
-      ${loadingOverlay}
-      <img src="${photo.previewUrl}" alt="${photo.fileName}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Y2EzYWYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiI+PC9yZWN0PjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ij48L2NpcmNsZT48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIj48L3BvbHlsaW5lPjwvc3ZnPg=='; this.style.padding='10px'; this.style.objectFit='contain';">
+      <img src="${photo.previewUrl || ''}" alt="${photo.fileName}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Y2EzYWYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiI+PC9yZWN0PjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ij48L2NpcmNsZT48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIj48L3BvbHlsaW5lPjwvc3ZnPg=='; this.style.padding='10px'; this.style.objectFit='contain';">
       <span class="photo-thumb-size">${sizeText}</span>
-      <button class="photo-thumb-remove" type="button" aria-label="Remove photo" ${photo.uploading ? 'disabled' : ''}>&times;</button>
+      <button class="photo-thumb-remove" type="button" aria-label="Remove photo">&times;</button>
     `;
     
     const removeBtn = thumb.querySelector('.photo-thumb-remove');
-    if (removeBtn && !photo.uploading) {
+    if (removeBtn) {
       removeBtn.addEventListener('click', () => {
         removePhoto(index);
       });

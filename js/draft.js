@@ -18,9 +18,18 @@ function saveDraft() {
     statusEl.classList.remove('is-saved');
   }
 
+  const cleanData = { ...inquiryData };
+  if (Array.isArray(cleanData.photos)) {
+    // Only store minimal metadata, no blob URLs or base64 in localStorage
+    cleanData.photos = cleanData.photos.map(p => ({
+      fileName: p.fileName,
+      sizeKB: p.sizeKB
+    }));
+  }
+
   const draftData = {
     step: currentDraftStep,
-    data: inquiryData
+    data: cleanData
   };
 
   try {

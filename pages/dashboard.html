@@ -22,9 +22,16 @@
           <a href="inquiries.html" class="main-nav-link">My Inquiries</a>
         </nav>
         <div class="app-header-actions">
-          <div class="app-user-chip">
-            <span class="app-user-avatar">DS</span>
-            <span>Demo Salesperson</span>
+          <div class="dropdown">
+            <div class="app-user-chip dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="app-user-avatar">DS</span>
+              <span class="d-none d-sm-inline">Demo Salesperson</span>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; margin-top: 8px;">
+              <li><a class="dropdown-item py-2" href="#">Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item py-2 text-danger fw-medium" id="btn-logout">Logout</button></li>
+            </ul>
           </div>
           <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-mobile-nav-toggle>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>

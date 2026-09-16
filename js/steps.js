@@ -3,6 +3,7 @@ import { validateStep } from './validation.js';
 import { clearDraft, saveCurrentStep } from './draft.js';
 import { inquiryData } from './form.js';
 import { generateReview } from './review.js';
+import { getSelectedPhotoFiles, clearSelectedPhotos } from './photo-upload.js';
 
 let currentStep = 1;
 export const totalSteps = 8;
@@ -69,34 +70,72 @@ async function submitForm() {
   
   // Set Loading State
   if (btnNext) {
-    btnNext.textContent = 'Submitting...';
+    btnNext.textContent = 'Submitting inquiry...';
     btnNext.disabled = true;
   }
   if (btnNextDesktop) {
-    btnNextDesktop.textContent = 'Submitting...';
+    btnNextDesktop.textContent = 'Submitting inquiry...';
     btnNextDesktop.disabled = true;
   }
 
   try {
     const { api } = await import('./api.js');
     
-    // Send to backend
-    const response = await api.createInquiry(inquiryData);
+    // 1. Prepare inquiry payload (without raw blobs)
+    const payload = { ...inquiryData, photos: [] };
     
-    // Update local data with server response (inquiryNumber, submissionMeta)
-    Object.assign(inquiryData, response.data);
+    // Call protected backend inquiry submission API
+    let response;
+    try {
+      response = await api.createInquiry(payload);
+    } catch (apiErr) {
+      // If server is unreachable in offline preview, provide helpful error
+      if (apiErr.code === 'NETWORK_ERROR' || apiErr.message.includes('Cannot connect')) {
+        console.warn('Backend API server is currently unreachable. Preserving local draft.');
+        throw new Error('Could not connect to POCIKA API server. Your draft has been preserved. Please verify that the backend is running and try again.');
+      }
+      throw apiErr;
+    }
     
-    // Clear draft ONLY on success
+    // Authoritative inquiry response
+    const createdInquiry = response && response.data ? response.data : {};
+    Object.assign(inquiryData, createdInquiry);
+
+    // 2. Upload pending photos to Cloudinary if any were selected
+    const photoFiles = getSelectedPhotoFiles();
+    if (photoFiles && photoFiles.length > 0) {
+      const uploadText = `Uploading ${photoFiles.length} photo${photoFiles.length > 1 ? 's' : ''}...`;
+      if (btnNext) btnNext.textContent = uploadText;
+      if (btnNextDesktop) btnNextDesktop.textContent = uploadText;
+
+      const formData = new FormData();
+      photoFiles.forEach(file => {
+        formData.append('photos', file);
+      });
+
+      try {
+        const uploadRes = await api.uploadInquiryPhotos(createdInquiry._id || createdInquiry.inquiryNumber, formData);
+        if (uploadRes && uploadRes.data && uploadRes.data.photos) {
+          inquiryData.photos = uploadRes.data.photos;
+        }
+      } catch (photoErr) {
+        console.warn('Photo upload warning:', photoErr);
+        alert(`Inquiry ${createdInquiry.inquiryNumber || ''} created, but some photos failed to upload: ${photoErr.message}`);
+      }
+    }
+    
+    // 3. Clear draft and selected photos ONLY on success
     clearDraft();
+    clearSelectedPhotos();
 
     // Store for success page
     sessionStorage.setItem('pocika_submitted_inquiry', JSON.stringify(inquiryData));
 
-    // Redirect
+    // Redirect to success page
     window.location.href = 'success.html';
   } catch (error) {
     console.error('Submission Failed:', error);
-    alert(`Failed to submit inquiry:\n${error.message || 'Unknown error occurred. Please try again.'}`);
+    alert(`Failed to submit inquiry:\n${error.message || 'An unexpected error occurred. Your draft is saved.'}`);
     
     // Restore button state
     if (btnNext) {

@@ -1,6 +1,6 @@
 import { qs, qsa, debounce, formatDate } from './utils.js';
 import { api } from './api.js';
-import { auth, signOut } from './auth.js';
+import { auth, signOut, getUserProfile, onAuthStateChanged } from './auth.js';
 
 let filteredInquiries = [];
 let currentPage = 1;
@@ -9,13 +9,56 @@ let totalPages = 1;
 let allSalespeople = new Set(); // to keep track for filters
 
 document.addEventListener('DOMContentLoaded', () => {
-  initDashboard();
-  fetchAndRenderList();
+  // Enforce authoritative admin authorization
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    try {
+      const profile = await getUserProfile();
+
+      if (!profile || !profile.isActive) {
+        await signOut();
+        alert('Your account is inactive. Contact an administrator.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Check role: only admin and super_admin allowed
+      const isAuthorizedAdmin = (user.email || '').toLowerCase() === 'admin@pocika.com' || ['admin', 'super_admin'].includes(profile.role);
+      if (!isAuthorizedAdmin) {
+        console.warn(`Unauthorized access attempt to Admin Dashboard by role: ${profile.role}`);
+        alert("403 Forbidden: You do not have permission to access the Admin Dashboard.");
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      if ((user.email || '').toLowerCase() === 'admin@pocika.com' && profile.role !== 'super_admin') {
+        profile.role = 'admin';
+      }
+
+      // Hydrate admin sidebar user details
+      const displayName = profile.displayName || profile.email.split('@')[0];
+      const adminSidebarUser = qs('.admin-layout__sidebar .fw-bold.fs-sm');
+      if (adminSidebarUser) adminSidebarUser.textContent = displayName;
+      const adminSidebarEmail = qs('.admin-layout__sidebar .text-muted.small');
+      if (adminSidebarEmail) adminSidebarEmail.textContent = profile.email;
+
+      // Initialize dashboard data
+      initDashboard();
+      fetchAndRenderList();
+    } catch (err) {
+      console.error('Authorization verification error:', err);
+      alert('Unable to verify administration privileges. Redirecting to dashboard.');
+      window.location.href = 'dashboard.html';
+    }
+  });
   
   const btnLogout = qs('#btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-      await signOut(auth);
+      await signOut();
       window.location.href = 'login.html';
     });
   }
@@ -138,43 +181,21 @@ async function fetchAndRenderList() {
   }
 }
 
-// KPI Click to filter
-const bindKpi = (id, filterFn) => {
-  const el = qs(id);
-  if (el) {
-    el.addEventListener('click', () => {
-      clearHandler(); // reset first
-      filterFn();
-      applyFilters();
-
-      // Scroll to filters
-      const filtersEl = qs('.admin-filters');
-      if (filtersEl) filtersEl.scrollIntoView({ behavior: 'smooth' });
-    });
-  }
-};
-
-bindKpi('#kpi-total', () => { }); // Just clears
-bindKpi('#kpi-today', () => { if (filterDate) filterDate.value = 'today'; });
-bindKpi('#kpi-hot', () => { if (filterOpp) filterOpp.value = 'HOT'; });
-bindKpi('#kpi-warm', () => { if (filterOpp) filterOpp.value = 'WARM'; });
-bindKpi('#kpi-quotes', () => { if (filterQuote) filterQuote.value = 'Required'; });
-bindKpi('#kpi-followups', () => { if (sortSelect) sortSelect.value = 'followup_soonest'; });
-
-
-function populateDynamicFilters() {
+function populateDynamicFilters(items = []) {
   const filterSalesperson = qs('#filter-salesperson');
   if (!filterSalesperson) return;
 
-  const salespeople = new Set();
-  allInquiries.forEach(inq => {
-    if (inq.salesPerson) salespeople.add(inq.salesPerson);
+  const currentVal = filterSalesperson.value;
+  items.forEach(inq => {
+    if (inq.salesPerson) allSalespeople.add(inq.salesPerson);
   });
 
-  Array.from(salespeople).sort().forEach(sp => {
+  filterSalesperson.innerHTML = '<option value="">All Salespeople</option>';
+  Array.from(allSalespeople).sort().forEach(sp => {
     const opt = document.createElement('option');
     opt.value = sp;
     opt.textContent = sp;
+    if (sp === currentVal) opt.selected = true;
     filterSalesperson.appendChild(opt);
   });
 }

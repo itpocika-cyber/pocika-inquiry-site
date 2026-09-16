@@ -150,7 +150,8 @@ export function generateReview() {
       section.photos.forEach(photo => {
         const thumb = document.createElement('div');
         thumb.className = 'photo-thumb';
-        thumb.innerHTML = `<img src="${photo.previewUrl}" alt="${photo.fileName}">`;
+        const src = photo.previewUrl || photo.secureUrl || '';
+        thumb.innerHTML = `<img src="${src}" alt="${escapeHtml(photo.fileName || 'Photo')}">`;
         photoGrid.appendChild(thumb);
       });
       sectionEl.appendChild(photoGrid);

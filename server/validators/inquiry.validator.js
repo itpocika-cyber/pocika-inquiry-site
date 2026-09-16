@@ -69,11 +69,7 @@ export const inquirySchema = z.object({
   
   remarks: z.string().optional().default(''),
   
-  photos: z.array(z.object({
-    fileName: z.string(),
-    sizeKB: z.number(),
-    previewUrl: z.string()
-  })).optional().default([])
+  photos: z.array(z.record(z.any())).optional().default([])
 });
 
 export const validateInquiry = (req, res, next) => {

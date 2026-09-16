@@ -3,38 +3,213 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - POCIKA Inquiry System</title>
+  <title>Sign In — POCIKA</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
   <link href="../css/main.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #F8FAFC;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0F172A;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+    }
+    .auth-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      padding: 2.5rem 2rem;
+    }
+    .auth-logo {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      margin-bottom: 1.25rem;
+    }
+    .auth-title {
+      font-size: 1.375rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0B1F33;
+      margin-bottom: 0.35rem;
+    }
+    .auth-subtitle {
+      font-size: 0.875rem;
+      color: #64748B;
+      margin-bottom: 2rem;
+    }
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: #FFFFFF;
+      color: #1E293B;
+      border: 1px solid #CBD5E1;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      transition: all 0.15s ease-in-out;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+    }
+    .btn-google:hover {
+      background-color: #F8FAFC;
+      border-color: #94A3B8;
+      box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    }
+    .btn-google:active {
+      background-color: #F1F5F9;
+      transform: scale(0.99);
+    }
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: #94A3B8;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .auth-divider span {
+      padding: 0 0.75rem;
+    }
+    .form-control {
+      padding: 0.65rem 0.875rem;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      font-size: 0.9rem;
+    }
+    .form-control:focus {
+      border-color: #0B1F33;
+      box-shadow: 0 0 0 3px rgba(11, 31, 51, 0.1);
+    }
+    .btn-pocika-submit {
+      background-color: #DC2626;
+      color: white;
+      padding: 0.7rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      width: 100%;
+      border: none;
+      transition: background-color 0.15s;
+    }
+    .btn-pocika-submit:hover {
+      background-color: #B91C1C;
+    }
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #64748B;
+      cursor: pointer;
+      padding: 0;
+    }
+    .auth-loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      z-index: 9999;
+      transition: opacity 0.2s ease-out;
+    }
+    .auth-loading-overlay.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+  </style>
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-  
-  <div class="card border-0 shadow-sm" style="width: 100%; max-width: 400px; border-radius: 12px;">
-    <div class="card-body p-5">
-      <div class="text-center mb-4">
-        <img src="../assets/logo/pocika-logo.png" alt="POCIKA Logo" height="40" class="mb-3">
-        <h4 class="fw-bold mb-1">Welcome Back</h4>
-        <p class="text-muted small">Sign in to access the system</p>
+<body>
+
+  <!-- Loading State Overlay -->
+  <div id="auth-loading-overlay" class="auth-loading-overlay">
+    <div class="spinner-border text-danger" role="status" style="width: 2.5rem; height: 2.5rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="small fw-medium text-secondary">Checking session...</div>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="text-center">
+        <img src="../assets/logo/pocika-logo.png" alt="POCIKA Logo" class="auth-logo">
+        <h1 class="auth-title">POCIKA Portal</h1>
+        <p class="auth-subtitle">Sales Inquiry & Site Visit Management</p>
       </div>
 
+      <!-- Error and Status Notifications -->
+      <div id="login-error" class="alert alert-danger d-none py-2 px-3 small mb-3 fw-medium" style="border-radius: 8px; border-left: 4px solid #DC2626;"></div>
+      <div id="login-unauthorized" class="alert alert-warning d-none py-2 px-3 small mb-3 fw-medium" style="border-radius: 8px; border-left: 4px solid #F59E0B;">
+        <strong>Access Denied:</strong> Your account is inactive. Please contact your system administrator.
+      </div>
+
+      <!-- Google Sign-In Button (Primary) -->
+      <button type="button" class="btn-google" id="btn-google-login">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        <span id="google-btn-text">Sign in with Google</span>
+      </button>
+
+      <div class="auth-divider">
+        <span>or sign in with email</span>
+      </div>
+
+      <!-- Email / Password Form (Secondary fallback) -->
       <form id="login-form">
-        <div id="login-error" class="alert alert-danger d-none py-2 px-3 small mb-3"></div>
-        
         <div class="mb-3">
-          <label class="form-label small fw-medium">Email Address</label>
-          <input type="email" class="form-control" id="email" required placeholder="admin@pocika.com">
+          <label class="form-label small fw-semibold text-secondary mb-1">Email Address</label>
+          <input type="email" class="form-control" id="email" placeholder="name@pocika.com" autocomplete="username">
         </div>
         
-        <div class="mb-4">
-          <label class="form-label small fw-medium">Password</label>
-          <input type="password" class="form-control" id="password" required placeholder="••••••••">
+        <div class="mb-4 position-relative">
+          <label class="form-label small fw-semibold text-secondary mb-1">Password</label>
+          <div class="position-relative">
+            <input type="password" class="form-control pe-5" id="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="password-toggle" id="toggle-password" title="Toggle password visibility">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
         </div>
         
-        <button type="submit" class="btn btn-primary w-100 py-2 fw-medium" id="btn-login">
+        <button type="submit" class="btn-pocika-submit" id="btn-login">
           Sign In
         </button>
       </form>
@@ -42,5 +217,20 @@
   </div>
 
   <script type="module" src="../js/login.js"></script>
+  <script>
+    const toggleBtn = document.getElementById('toggle-password');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        const pwd = document.getElementById('password');
+        if (pwd.type === 'password') {
+          pwd.type = 'text';
+          this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+        } else {
+          pwd.type = 'password';
+          this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        }
+      });
+    }
+  </script>
 </body>
 </html>

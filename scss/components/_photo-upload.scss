@@ -12,6 +12,13 @@
   &.is-dragover {
     border-color: $color-primary;
     background-color: $color-primary-soft;
+    transform: scale(1.02);
+  }
+
+  &:hover:not(.is-dragover) {
+    border-color: $color-primary;
+    background-color: rgba($color-bg, 0.5);
+    cursor: pointer;
   }
 
   .photo-upload-icon {
