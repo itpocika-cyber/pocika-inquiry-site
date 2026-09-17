@@ -7,3 +7,5 @@ build/
 .vscode/
 server/uploads/photos/*
 !server/uploads/photos/.gitkeep
+scratch/
+debug-*.html
