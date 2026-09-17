@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs/promises';
 
-const BASE_URL = 'http://localhost:3000';
-const MONGO_URI = 'mongodb+srv://developer:Devraj2122@pocika-cluster.gaso258.mongodb.net/pocika_inquiry_db?retryWrites=true&w=majority&appName=pocika-cluster';
+const BASE_URL = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const MONGO_URI = process.env.MONGODB_URI;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -56,7 +56,7 @@ async function runFullE2ETest() {
 
     // Fill credentials
     await page.type('#email', 'sales@pocika.com');
-    await page.type('#password', 'Dyz7wb0h4tJOewaj');
+    await page.type('#password', process.env.DEMO_SALES_PASSWORD || 'Sales@12345');
     
     // Click Sign In
     console.log('  Submitting login form for sales@pocika.com...');
@@ -372,7 +372,7 @@ async function runFullE2ETest() {
     console.log('  Logging in as admin@pocika.com...');
     await page.waitForSelector('#login-form', { timeout: 10000 });
     await page.type('#email', 'admin@pocika.com');
-    await page.type('#password', 'Dyz7wb0h4tJOewaj');
+    await page.type('#password', process.env.DEMO_ADMIN_PASSWORD || 'Admin@12345');
     await page.click('#btn-login');
 
     await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });

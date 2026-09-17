@@ -5,17 +5,18 @@
   "private": true,
   "description": "POCIKA Sales Inquiry & Site Visit Management System — static frontend (HTML/CSS/SCSS/Bootstrap5/vanilla JS). node_modules is a DEV-ONLY tool to compile SCSS to CSS; nothing here runs at runtime — the shipped app is plain HTML/CSS/JS you can open in any browser.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev:all": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"nodemon server/server.js\" \"vite client --config client/vite.config.js\"",
+    "dev": "vite client --config client/vite.config.js",
+    "build": "vite build client --config client/vite.config.js",
+    "preview": "vite preview client --config client/vite.config.js",
     "server": "nodemon server/server.js",
     "server:start": "node server/server.js",
     "seed:auth": "node server/scripts/seed-auth.js",
-    "build:css": "sass scss/main.scss css/main.css --no-source-map",
-    "watch:css": "sass --watch scss/main.scss css/main.css --no-source-map"
+    "test": "node --test server/tests/jwt-auth-rbac.test.js server/tests/cloudinary-media.test.js"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.5",
     "nodemon": "^3.1.14",
     "pdf-parse": "^2.4.5",
     "sass": "^1.77.0",

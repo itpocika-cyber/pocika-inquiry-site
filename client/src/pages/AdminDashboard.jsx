@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
+import api from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
 export default function AdminDashboard() {
@@ -59,13 +61,6 @@ export default function AdminDashboard() {
         const items = inqRes.data.items || [];
         setInquiries(items);
         setTotalPages(inqRes.data.pagination?.totalPages || 1);
-
-        // Collect unique salespeople
-        const sps = new Set(salespeopleList);
-        items.forEach((item) => {
-          if (item.salesPerson) sps.add(item.salesPerson);
-        });
-        setSalespeopleList(Array.from(sps));
       }
     } catch (err) {
       console.warn('Admin fetch warning:', err.message);
@@ -73,6 +68,22 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  const fetchSalespeople = async () => {
+    try {
+      const res = await api.get('/users?role=sales_person');
+      if (res.data?.users) {
+        const list = res.data.users.map(u => u.displayName || u.email).filter(Boolean);
+        setSalespeopleList(list);
+      }
+    } catch (err) {
+      console.warn('Failed to load salespeople list:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchSalespeople();
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -173,28 +184,14 @@ export default function AdminDashboard() {
             </svg>
             Dashboard
           </Link>
-          <Link to="/inquiries" className="admin-nav-item">
+          <Link to="/admin/team" className="admin-nav-item">
             <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            All Inquiries
-          </Link>
-          <Link to="/inquiry" className="admin-nav-item">
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Inquiry Form
-          </Link>
-          <Link to="/design-system" className="admin-nav-item">
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-            </svg>
-            Design System
+            Manage Sales Team
           </Link>
         </div>
 
@@ -244,8 +241,14 @@ export default function AdminDashboard() {
             </h1>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <Link to="/dashboard" className="btn-pocika btn-pocika-ghost btn-sm">
-              Switch to Sales View
+            <Link to="/admin/team" className="btn-pocika btn-pocika-secondary btn-sm d-inline-flex align-items-center gap-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Manage Sales Team
             </Link>
           </div>
         </header>
@@ -373,9 +376,14 @@ export default function AdminDashboard() {
             </h2>
 
             {loading ? (
-              <div className="text-center py-5 text-muted">Loading inquiries...</div>
+              <LoadingSpinner message="Loading inquiries for administrative review..." />
             ) : inquiries.length === 0 ? (
-              <div className="text-center py-5 text-muted">No matching inquiry records.</div>
+              <EmptyState
+                title="No inquiries found"
+                description="No inquiries match your current administrative filter criteria."
+                actionLabel="Clear Filters"
+                onAction={handleClear}
+              />
             ) : (
               <>
                 <div className="d-none d-lg-block table-responsive">

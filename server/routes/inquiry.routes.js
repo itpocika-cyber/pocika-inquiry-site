@@ -13,7 +13,7 @@ import {
   getInquiryPhotos,
   deleteInquiryPhoto
 } from '../controllers/upload.controller.js';
-import { validateInquiry } from '../validators/inquiry.validator.js';
+import { validateInquiry, validateInquiryUpdate } from '../validators/inquiry.validator.js';
 import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.post('/', authenticateUser, validateInquiry, createInquiry);
 router.get('/', authenticateUser, getInquiries);
 router.get('/:id', authenticateUser, getInquiryById);
 router.get('/:id/pdf', authenticateUser, downloadInquiryPdf);
-router.patch('/:id', authenticateUser, updateInquiry);
+router.patch('/:id', authenticateUser, validateInquiryUpdate, updateInquiry);
 
 // Photo endpoints
 router.post('/:id/photos', authenticateUser, uploadMiddleware, uploadInquiryPhotos);

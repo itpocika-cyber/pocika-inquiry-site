@@ -61,7 +61,7 @@ export default function PhotoUploader({
           <circle cx="12" cy="13" r="3.5" />
         </svg>
         <div className="photo-upload-title">Tap to take a photo or choose from gallery</div>
-        <div className="photo-upload-helper">Up to {maxPhotos} photos · JPG, PNG, or WebP (max 10MB)</div>
+        <div className="photo-upload-helper">Up to {maxPhotos} photos · JPG, PNG, or WebP (max 5MB)</div>
         <input
           ref={fileInputRef}
           type="file"

@@ -106,6 +106,14 @@ export const inquirySchema = z.object({
   photos: z.array(z.record(z.any())).optional().default([])
 });
 
+export const updateInquirySchema = inquirySchema.partial().extend({
+  managerReview: z.object({
+    status: z.enum(['Pending', 'Reviewed', 'Approved', 'Rejected']).optional(),
+    remarks: optionalTrimmedString,
+    reviewedBy: optionalTrimmedString
+  }).optional()
+});
+
 export const validateInquiry = (req, res, next) => {
   try {
     const validatedData = inquirySchema.parse(req.body);
@@ -115,4 +123,15 @@ export const validateInquiry = (req, res, next) => {
     next(error); // pass to errorHandler which handles ZodError
   }
 };
+
+export const validateInquiryUpdate = (req, res, next) => {
+  try {
+    const validatedData = updateInquirySchema.parse(req.body);
+    req.validatedBody = validatedData;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 

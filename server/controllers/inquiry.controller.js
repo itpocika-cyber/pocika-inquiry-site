@@ -247,7 +247,7 @@ export const updateInquiry = async (req, res, next) => {
     const updatedInquiry = await Inquiry.findByIdAndUpdate(
       inquiry._id,
       { $set: updateData },
-      { returnDocument: 'after', runValidators: true }
+      { new: true, returnDocument: 'after', runValidators: true }
     );
 
     return successResponse(res, updatedInquiry);

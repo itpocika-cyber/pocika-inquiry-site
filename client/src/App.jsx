@@ -1,15 +1,23 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import InquiriesList from './pages/InquiriesList';
 import InquiryForm from './pages/InquiryForm';
 import InquiryDetails from './pages/InquiryDetails';
 import AdminDashboard from './pages/AdminDashboard';
+import ManageTeam from './pages/ManageTeam';
 import Success from './pages/Success';
 import DesignSystem from './pages/DesignSystem';
 import { useAuthStore } from './store/authStore';
+
+function RootRedirect() {
+  const { user } = useAuthStore();
+  const isAdmin = ['admin', 'super_admin', 'manager'].includes(user?.role);
+  return <Navigate to={isAdmin ? '/admin-dashboard' : '/dashboard'} replace />;
+}
 
 export default function App() {
   const { checkAuth } = useAuthStore();
@@ -19,75 +27,90 @@ export default function App() {
   }, [checkAuth]);
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Root smart redirect */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <RootRedirect />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Sales-Only Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['sales_person']}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/inquiries"
-        element={
-          <ProtectedRoute>
-            <InquiriesList />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/inquiries"
+          element={
+            <ProtectedRoute allowedRoles={['sales_person']}>
+              <InquiriesList />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/inquiries/:id"
-        element={
-          <ProtectedRoute>
-            <InquiryDetails />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/inquiry"
+          element={
+            <ProtectedRoute allowedRoles={['sales_person']}>
+              <InquiryForm />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/inquiry"
-        element={
-          <ProtectedRoute>
-            <InquiryForm />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/success"
+          element={
+            <ProtectedRoute allowedRoles={['sales_person']}>
+              <Success />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/success"
-        element={
-          <ProtectedRoute>
-            <Success />
-          </ProtectedRoute>
-        }
-      />
+        {/* Shared Detail Route (Sales viewing own, Admin reviewing all) */}
+        <Route
+          path="/inquiries/:id"
+          element={
+            <ProtectedRoute>
+              <InquiryDetails />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin-dashboard"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'super_admin', 'manager']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Admin / Manager Only Routes */}
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'manager']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="/design-system" element={<DesignSystem />} />
+        <Route
+          path="/admin/team"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <ManageTeam />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        <Route path="/design-system" element={<DesignSystem />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

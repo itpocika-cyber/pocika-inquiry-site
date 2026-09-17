@@ -9,7 +9,7 @@ import {
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 
 const MAX_PHOTOS = 5;
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 // Memory storage keeps uploaded files in RAM as Buffers (clean, no orphaned disk temp files)
@@ -64,8 +64,11 @@ export const uploadInquiryPhotos = async (req, res, next) => {
     }
 
     // 2. Authorize user (Ownership check)
-    const isOwner = inquiry.createdBy?.firebaseUid === req.user.firebaseUid;
-    const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+    const isOwner =
+      (inquiry.createdBy?.userId && inquiry.createdBy?.userId === req.user.userId) ||
+      (inquiry.createdBy?.firebaseUid && inquiry.createdBy?.firebaseUid === req.user.firebaseUid) ||
+      (inquiry.createdBy?.email && inquiry.createdBy?.email === req.user.email);
+    const isAdmin = ['admin', 'super_admin', 'manager'].includes(req.user.role);
 
     if (!isOwner && !isAdmin) {
       return errorResponse(res, {
@@ -178,7 +181,10 @@ export const getInquiryPhotos = async (req, res, next) => {
       return errorResponse(res, { code: 'INQUIRY_NOT_FOUND', message: 'Inquiry not found.' }, 404);
     }
 
-    const isOwner = inquiry.createdBy?.firebaseUid === req.user.firebaseUid;
+    const isOwner =
+      (inquiry.createdBy?.userId && inquiry.createdBy?.userId === req.user.userId) ||
+      (inquiry.createdBy?.firebaseUid && inquiry.createdBy?.firebaseUid === req.user.firebaseUid) ||
+      (inquiry.createdBy?.email && inquiry.createdBy?.email === req.user.email);
     const isAdmin = ['admin', 'super_admin', 'manager'].includes(req.user.role);
 
     if (!isOwner && !isAdmin) {
@@ -221,8 +227,11 @@ export const deleteInquiryPhoto = async (req, res, next) => {
       return errorResponse(res, { code: 'INQUIRY_NOT_FOUND', message: 'Inquiry not found.' }, 404);
     }
 
-    const isOwner = inquiry.createdBy?.firebaseUid === req.user.firebaseUid;
-    const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+    const isOwner =
+      (inquiry.createdBy?.userId && inquiry.createdBy?.userId === req.user.userId) ||
+      (inquiry.createdBy?.firebaseUid && inquiry.createdBy?.firebaseUid === req.user.firebaseUid) ||
+      (inquiry.createdBy?.email && inquiry.createdBy?.email === req.user.email);
+    const isAdmin = ['admin', 'super_admin', 'manager'].includes(req.user.role);
 
     if (!isOwner && !isAdmin) {
       return errorResponse(res, {

@@ -6,7 +6,10 @@ import { Inquiry } from '../models/Inquiry.js';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'pocika_jwt_secret_secure_key_2026';
+import mongoose from 'mongoose';
+import { config } from '../config/env.js';
+
+const JWT_SECRET = config.jwtSecret;
 
 let server;
 let baseUrl;
@@ -28,7 +31,12 @@ describe('Phase 4: JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => 
   });
 
   after(async () => {
-    if (server) server.close();
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    try {
+      await mongoose.disconnect();
+    } catch {}
   });
 
   it('1. Missing Authorization header returns 401 Unauthorized', async () => {
@@ -87,6 +95,50 @@ describe('Phase 4: JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => 
     const userSchema = User.schema;
     assert.ok(userSchema.path('password'), 'password field must exist in User schema');
     assert.ok(typeof userSchema.methods.comparePassword === 'function', 'comparePassword method must exist');
+  });
+
+  it('7. POST /api/v1/auth/register is locked down and rejects unauthenticated caller', async () => {
+    const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'newadmin@pocika.com', password: 'password123', role: 'admin' })
+    });
+    const data = await res.json();
+    assert.equal(res.status, 401);
+    assert.equal(data.error?.code, 'UNAUTHORIZED');
+  });
+
+  it('8. GET /api/v1/users rejects unauthenticated or salesperson callers', async () => {
+    // Unauthenticated
+    const unauthRes = await fetch(`${baseUrl}/api/v1/users`);
+    assert.equal(unauthRes.status, 401);
+
+    // Salesperson caller
+    const salesToken = createToken({
+      id: '507f1f77bcf86cd799439011',
+      userId: '507f1f77bcf86cd799439011',
+      email: 'sales@pocika.com',
+      role: 'sales_person'
+    });
+    const salesRes = await fetch(`${baseUrl}/api/v1/users`, {
+      headers: { Authorization: `Bearer ${salesToken}` }
+    });
+    assert.equal(salesRes.status, 403);
+  });
+
+  it('9. Admin can access GET /api/v1/users and password hash is omitted', async () => {
+    const adminToken = createToken({
+      id: '507f1f77bcf86cd799439099',
+      userId: '507f1f77bcf86cd799439099',
+      email: 'admin@pocika.com',
+      role: 'admin'
+    });
+    const res = await fetch(`${baseUrl}/api/v1/users`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(data.data?.users));
   });
 
 });

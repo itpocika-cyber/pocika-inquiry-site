@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import api from '../services/api';
+import api from '../api/client';
 
 export default function Success() {
   const [submittedInquiry, setSubmittedInquiry] = useState(null);

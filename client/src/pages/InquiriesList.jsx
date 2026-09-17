@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
+import api from '../api/client';
 
 export default function InquiriesList() {
   const [inquiries, setInquiries] = useState([]);
@@ -179,18 +181,14 @@ export default function InquiriesList() {
         {/* Inquiries Table Card */}
         <div className="card-pocika p-4">
           {loading ? (
-            <div className="text-center py-5 text-muted">Loading inquiries...</div>
+            <LoadingSpinner message="Fetching inquiry records..." />
           ) : inquiries.length === 0 && !hasDraft ? (
-            <div className="text-center py-5">
-              <p className="text-muted mb-3">No matching inquiries found.</p>
-              <button
-                type="button"
-                className="btn-pocika btn-pocika-secondary"
-                onClick={handleClearFilters}
-              >
-                Reset Filters
-              </button>
-            </div>
+            <EmptyState
+              title="No matching inquiries"
+              description="No inquiries match your current search or filter criteria. Try clearing your filters."
+              actionLabel="Reset Filters"
+              onAction={handleClearFilters}
+            />
           ) : (
             <>
               {/* Desktop Table View */}

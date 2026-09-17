@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../services/api';
+import api from '../api/client';
 
 const DRAFT_KEY = 'pocika_inquiry_draft';
 
@@ -89,6 +89,17 @@ export const useInquiryFormStore = create((set, get) => ({
       updated[parts[0]] = { ...updated[parts[0]], [parts[1]]: value };
     }
 
+    // Auto-clear conditional fields to avoid stale data submission:
+    if (path === 'business.customerType' && value !== 'Retail/Other') {
+      updated.business = { ...updated.business, customerTypeOther: '' };
+    }
+    if (path === 'business.facility' && value !== 'Other') {
+      updated.business = { ...updated.business, facilityOther: '' };
+    }
+    if (path === 'visit.photos' && value === 'Not Required') {
+      get().clearPhotos();
+    }
+
     // Clear validation error on the modified field
     const errors = { ...get().validationErrors };
     delete errors[path];
@@ -112,13 +123,32 @@ export const useInquiryFormStore = create((set, get) => ({
       ? currentArr.filter(x => x !== item)
       : [...currentArr, item];
 
-    get().setField(path, nextArr);
+    const updated = { ...formData };
+    if (parts.length === 1) {
+      updated[parts[0]] = nextArr;
+    } else if (parts.length === 2) {
+      updated[parts[0]] = { ...updated[parts[0]], [parts[1]]: nextArr };
+    }
+
+    // Auto-clear conditional fields when trigger is unselected
+    if (path === 'products' && !nextArr.includes('Other')) {
+      updated.productOther = '';
+    }
+    if (path === 'followUp.nextAction' && !nextArr.includes('Quotation')) {
+      updated.followUp = { ...updated.followUp, quotationDate: '' };
+    }
+
+    const errors = { ...get().validationErrors };
+    delete errors[path];
+
+    set({ formData: updated, validationErrors: errors });
+    get().saveDraftDebounced();
   },
 
   addPhotoFiles: (files) => {
     const { selectedPhotoFiles, formData } = get();
     const maxPhotos = 5;
-    const maxBytes = 10 * 1024 * 1024;
+    const maxBytes = 5 * 1024 * 1024; // 5 MB
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
     const newFiles = [...selectedPhotoFiles];
@@ -135,7 +165,7 @@ export const useInquiryFormStore = create((set, get) => ({
         break;
       }
       if (file.size > maxBytes) {
-        error = `${file.name}: Size exceeds 10MB limit.`;
+        error = `${file.name}: Size exceeds 5MB limit.`;
         break;
       }
 
@@ -315,7 +345,7 @@ export const useInquiryFormStore = create((set, get) => ({
         } catch (e) {
           console.warn('Failed to save draft:', e);
         }
-      }, 600);
+      }, 300);
     };
   })(),
 

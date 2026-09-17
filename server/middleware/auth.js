@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { errorResponse } from '../utils/apiResponse.js';
+import { config } from '../config/env.js';
 import mongoose from 'mongoose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'pocika_jwt_secret_secure_key_2026';
+const JWT_SECRET = config.jwtSecret;
 
 /**
  * Authenticates a request using JWT and attaches the user document to req.user.

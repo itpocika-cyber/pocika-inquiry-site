@@ -26,41 +26,56 @@ export default function Header() {
   return (
     <header className="app-header">
       <div className="app-header-inner">
-        <Link to="/dashboard" className="app-logo">
+        <Link to={isAdmin ? "/admin-dashboard" : "/dashboard"} className="app-logo">
           <img src="/assets/logo/pocika-logo.png" alt="POCIKA Fire & Safety Products LLP" />
           <span className="app-logo-text">POCIKA</span>
         </Link>
 
         <nav className="main-nav" aria-label="Primary">
-          <Link
-            to="/dashboard"
-            className={`main-nav-link ${location.pathname === '/dashboard' || location.pathname === '/' ? 'is-active' : ''}`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/inquiries"
-            className={`main-nav-link ${location.pathname === '/inquiries' ? 'is-active' : ''}`}
-          >
-            My Inquiries
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin-dashboard"
-              className={`main-nav-link ${location.pathname === '/admin-dashboard' ? 'is-active' : ''}`}
-            >
-              Admin
-            </Link>
+          {isAdmin ? (
+            <>
+              <Link
+                to="/admin-dashboard"
+                className={`main-nav-link ${location.pathname === '/admin-dashboard' ? 'is-active' : ''}`}
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/admin/team"
+                className={`main-nav-link ${location.pathname === '/admin/team' ? 'is-active' : ''}`}
+              >
+                Manage Sales Team
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/dashboard"
+                className={`main-nav-link ${location.pathname === '/dashboard' || location.pathname === '/' ? 'is-active' : ''}`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/inquiries"
+                className={`main-nav-link ${location.pathname === '/inquiries' ? 'is-active' : ''}`}
+              >
+                My Inquiries
+              </Link>
+            </>
           )}
-          <Link
-            to="/design-system"
-            className={`main-nav-link ${location.pathname === '/design-system' ? 'is-active' : ''}`}
-          >
-            Design system
-          </Link>
         </nav>
 
         <div className="app-header-actions">
+          {!isAdmin && (
+            <Link
+              to="/inquiry"
+              className="btn-pocika btn-pocika-primary btn-sm d-none d-sm-inline-flex align-items-center gap-1"
+              style={{ textDecoration: 'none' }}
+            >
+              + New Inquiry
+            </Link>
+          )}
+
           {user && (
             <div className="dropdown position-relative">
               <div
@@ -124,36 +139,48 @@ export default function Header() {
 
       {mobileMenuOpen && (
         <div className="mobile-nav-panel is-open" data-mobile-nav-panel>
-          <Link
-            to="/dashboard"
-            className="mobile-nav-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/inquiries"
-            className="mobile-nav-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            My Inquiries
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin-dashboard"
-              className="mobile-nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Admin Dashboard
-            </Link>
+          {isAdmin ? (
+            <>
+              <Link
+                to="/admin-dashboard"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/admin/team"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Manage Sales Team
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/dashboard"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/inquiries"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                My Inquiries
+              </Link>
+              <Link
+                to="/inquiry"
+                className="mobile-nav-link fw-semibold text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                + New Inquiry
+              </Link>
+            </>
           )}
-          <Link
-            to="/design-system"
-            className="mobile-nav-link"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Design system
-          </Link>
           <div className="p-3 border-top mt-2">
             <button
               className="btn-pocika btn-pocika-danger-ghost w-100"

@@ -1,20 +1,29 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
 import inquiryRoutes from './routes/inquiry.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import userRoutes from './routes/user.routes.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { successResponse, errorResponse } from './utils/apiResponse.js';
 import mongoose from 'mongoose';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, 'uploads');
+
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
 // CORS Config - strict origin enforcement (no '*')
 const allowedOrigins = [
@@ -38,7 +47,7 @@ app.use(cors({
     }
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
-  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
@@ -46,6 +55,9 @@ app.use(cors({
 // Body Parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve local uploads folder
+app.use('/uploads', express.static(uploadsDir));
 
 // Request Logging
 app.use(requestLogger);
@@ -64,6 +76,7 @@ app.get('/api/v1/health', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/inquiries', inquiryRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // 404 Handler
 app.use(notFound);

@@ -120,37 +120,11 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Quick Demo Fill Buttons */}
-        <div className="border-top pt-3 mt-3">
-          <div className="text-helper text-center mb-2" style={{ fontSize: '0.75rem' }}>
-            QUICK DEMO ACCOUNTS
-          </div>
-          <div className="d-flex gap-2">
-            <button
-              type="button"
-              className="btn-pocika btn-pocika-ghost flex-grow-1 py-1"
-              style={{ fontSize: '0.8rem' }}
-              onClick={() => handleQuickLogin('sales@pocika.com', 'Sales@12345')}
-            >
-              Salesperson
-            </button>
-            <button
-              type="button"
-              className="btn-pocika btn-pocika-ghost flex-grow-1 py-1"
-              style={{ fontSize: '0.8rem' }}
-              onClick={() => handleQuickLogin('admin@pocika.com', 'Admin@12345')}
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              className="btn-pocika btn-pocika-ghost flex-grow-1 py-1"
-              style={{ fontSize: '0.8rem' }}
-              onClick={() => handleQuickLogin('manager@pocika.com', 'Manager@12345')}
-            >
-              Manager
-            </button>
-          </div>
+        {/* Security / Admin notice */}
+        <div className="border-top pt-3 mt-3 text-center">
+          <p className="text-muted small mb-0" style={{ fontSize: '0.8rem' }}>
+            Authorized personnel only. Contact your administrator if you need access.
+          </p>
         </div>
       </div>
     </div>

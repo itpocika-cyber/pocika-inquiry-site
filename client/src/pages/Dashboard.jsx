@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+import api from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
 export default function Dashboard() {
@@ -163,7 +164,7 @@ export default function Dashboard() {
               </div>
 
               {loading ? (
-                <div className="text-center py-4 text-muted">Loading records...</div>
+                <LoadingSpinner message="Loading recent inquiries..." />
               ) : recentInquiries.length === 0 ? (
                 <div className="text-center py-5">
                   <p className="text-muted mb-3">No inquiries recorded yet.</p>

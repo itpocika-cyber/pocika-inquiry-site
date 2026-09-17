@@ -17,7 +17,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && user) {
     const isAllowed = allowedRoles.includes(user.role);
     if (!isAllowed) {
-      return <Navigate to="/dashboard" replace />;
+      const isAdmin = ['admin', 'manager', 'super_admin'].includes(user.role);
+      return <Navigate to={isAdmin ? '/admin-dashboard' : '/dashboard'} replace />;
     }
   }
 

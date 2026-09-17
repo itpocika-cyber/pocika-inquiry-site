@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { User } from '../models/User.js';
+import { config } from '../config/env.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'pocika_jwt_secret_secure_key_2026';
+const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES_IN = '7d';
 
 /**
@@ -41,22 +42,11 @@ export const login = async (req, res, next) => {
     const normalizedEmail = email.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
-    // For first-time login of default admin/salesperson accounts if not seeded yet
     if (!user) {
-      if (normalizedEmail === 'admin@pocika.com') {
-        user = await User.create({
-          email: normalizedEmail,
-          password: password,
-          displayName: 'Demo Administrator',
-          role: 'admin',
-          isActive: true
-        });
-      } else {
-        return errorResponse(res, {
-          code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password.'
-        }, 401);
-      }
+      return errorResponse(res, {
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid email or password.'
+      }, 401);
     }
 
     // Verify password if user has one set

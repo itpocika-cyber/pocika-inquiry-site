@@ -30,6 +30,50 @@ const formatCurrency = (val) => {
   return `₹ ${num.toLocaleString('en-IN')}`;
 };
 
+async function resolveImageToDataUri(imgUrl) {
+  if (!imgUrl) return null;
+
+  // 1. Local path
+  if (imgUrl.startsWith('/uploads/')) {
+    try {
+      const relativePath = imgUrl.replace(/^\//, '');
+      const filePath = path.resolve(__dirname, '..', relativePath);
+      await fs.access(filePath);
+      const buf = await fs.readFile(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mime = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+      return `data:${mime};base64,${buf.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  }
+
+  // 2. Base64 data URI
+  if (imgUrl.startsWith('data:image/')) {
+    return imgUrl;
+  }
+
+  // 3. Remote URL
+  if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(imgUrl, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const arrayBuf = await res.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        const contentType = res.headers.get('content-type') || 'image/jpeg';
+        return `data:${contentType};base64,${buf.toString('base64')}`;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export const generateInquiryPdf = async (inquiry) => {
   let browser = null;
   
@@ -54,26 +98,46 @@ export const generateInquiryPdf = async (inquiry) => {
       ? `Other (${inquiry.business.facilityOther})`
       : (inquiry.business?.facility || '-');
 
+
     // 4. Photos Section Generation
     let photosHtml = '';
     if (inquiry.photos && inquiry.photos.length > 0) {
-      const photoCards = inquiry.photos.map((p, idx) => {
+      const photoCards = await Promise.all(inquiry.photos.map(async (p, idx) => {
         const imgUrl = p.optimizedUrls?.preview || p.optimizedUrls?.thumbnail || p.secureUrl || p.previewUrl;
         const caption = escapeHtml(p.originalFileName || p.fileName || `Site Photo ${idx + 1}`);
+        const dataUri = await resolveImageToDataUri(imgUrl);
+
+        if (dataUri) {
+          return `
+            <div class="photo-card">
+              <div class="photo-badge">#${idx + 1}</div>
+              <img src="${dataUri}" alt="${caption}" />
+              <div class="photo-caption">${caption}</div>
+            </div>
+          `;
+        }
+
         return `
           <div class="photo-card">
             <div class="photo-badge">#${idx + 1}</div>
-            <img src="${imgUrl}" alt="${caption}" />
+            <div class="photo-placeholder-box">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <div class="placeholder-sub">${caption}</div>
+            </div>
             <div class="photo-caption">${caption}</div>
           </div>
         `;
-      }).join('');
+      }));
       
       photosHtml = `
         <div class="section">
           <div class="section-title">Site Visit Photos (${inquiry.photos.length})</div>
           <div class="photos-grid">
-            ${photoCards}
+            ${photoCards.join('')}
           </div>
         </div>
       `;

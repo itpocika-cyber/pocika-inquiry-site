@@ -35,7 +35,18 @@ api.interceptors.response.use(
         }
       }
       
-      const customError = new Error(data?.error?.message || data?.message || 'Request failed');
+      let errorMsg = 'Request failed';
+      if (typeof data === 'string' && data.trim()) {
+        errorMsg = data;
+      } else if (data?.error?.message) {
+        errorMsg = data.error.message;
+      } else if (data?.message) {
+        errorMsg = data.message;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      const customError = new Error(errorMsg);
       customError.status = status;
       customError.code = data?.error?.code || 'API_ERROR';
       customError.details = data?.error?.details || [];

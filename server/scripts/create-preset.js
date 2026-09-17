@@ -1,9 +1,16 @@
 import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 cloudinary.config({
-  cloud_name: 'pocika',
-  api_key: '585299517146568',
-  api_secret: 'Gp-zTqWp44EC2sRsr9Mq92M8vVc'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 async function createPreset() {

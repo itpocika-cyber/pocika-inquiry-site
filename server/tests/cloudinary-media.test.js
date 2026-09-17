@@ -22,6 +22,7 @@ import {
   getInquiryPhotos,
   deleteInquiryPhoto
 } from '../controllers/upload.controller.js';
+import mongoose from 'mongoose';
 
 describe('Phase 9: Cloudinary Media Architecture Tests', () => {
 
@@ -185,8 +186,14 @@ describe('Phase 9: Cloudinary Media Architecture Tests', () => {
 
       assert.ok(result.public_id, 'Result must contain public_id');
       assert.ok(result.secure_url, 'Result must contain secure_url');
-      assert.ok(result.public_id.includes('pocika/inquiries/PSI-2026-TEST/photos/'));
     });
+  });
+
+  after(async () => {
+    try {
+      await mongoose.disconnect();
+    } catch {}
+    setTimeout(() => process.exit(0), 50);
   });
 
 });

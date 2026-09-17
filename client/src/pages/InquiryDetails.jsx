@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import api from '../services/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+import api from '../api/client';
 
 export default function InquiryDetails() {
   const { id } = useParams();
@@ -154,7 +155,7 @@ export default function InquiryDetails() {
       <div className="app-shell">
         <Header />
         <main className="container-app section-block text-center py-5">
-          <p className="text-muted">Loading inquiry details...</p>
+          <LoadingSpinner message="Loading inquiry details..." />
         </main>
         <Footer />
       </div>
@@ -425,22 +426,7 @@ export default function InquiryDetails() {
                 <div className="row g-3">
                   {inquiry.photos.map((photo, idx) => (
                     <div key={idx} className="col-6 col-md-4">
-                      <div
-                        className="photo-card"
-                        style={{
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => setActivePhoto(photo)}
-                      >
-                        <img
-                          src={photo.optimizedUrls?.thumbnail || photo.secureUrl || photo.previewUrl}
-                          alt={photo.originalFileName || `Site Photo ${idx + 1}`}
-                          style={{ width: '100%', height: '160px', objectFit: 'cover' }}
-                        />
-                      </div>
+                      <PhotoItem photo={photo} idx={idx} onSelect={setActivePhoto} />
                     </div>
                   ))}
                 </div>
@@ -611,37 +597,98 @@ export default function InquiryDetails() {
 
       {/* Lightbox Modal */}
       {activePhoto && (
+        <PhotoModal photo={activePhoto} onClose={() => setActivePhoto(null)} />
+      )}
+    </div>
+  );
+}
+
+function PhotoItem({ photo, idx, onSelect }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const imgUrl = photo.optimizedUrls?.thumbnail || photo.secureUrl || photo.previewUrl;
+  const displayName = photo.originalFileName || photo.fileName || `Site Photo ${idx + 1}`;
+
+  return (
+    <div
+      className="photo-card"
+      style={{
+        border: '1px solid var(--color-border)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        cursor: 'pointer'
+      }}
+      onClick={() => onSelect(photo)}
+    >
+      {!imgFailed && imgUrl ? (
+        <img
+          src={imgUrl}
+          alt={displayName}
+          style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
         <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
-          onClick={() => setActivePhoto(null)}
+          className="photo-fallback-card d-flex flex-column align-items-center justify-content-center p-3 text-center"
+          style={{ height: '160px', background: '#f8fafc', color: 'var(--color-text-muted)' }}
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content border-0 rounded-4 overflow-hidden bg-transparent">
-              <div className="modal-body text-center p-3">
-                <img
-                  src={activePhoto.secureUrl || activePhoto.previewUrl}
-                  alt={activePhoto.originalFileName || 'Site Photo'}
-                  className="img-fluid rounded-3 mb-2"
-                  style={{ maxHeight: '75vh', objectFit: 'contain' }}
-                />
-                <div className="d-flex justify-content-between align-items-center text-white small px-2">
-                  <span>{activePhoto.originalFileName || 'Site Photo'}</span>
-                  <a
-                    href={activePhoto.secureUrl || activePhoto.previewUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-pocika btn-pocika-ghost text-white btn-sm"
-                  >
-                    Open Full Size
-                  </a>
-                </div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-2 text-secondary">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span className="small text-truncate w-100 fw-semibold">{displayName}</span>
+          <span className="small text-muted">{photo.sizeKB ? `${photo.sizeKB} KB` : 'Attached'}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PhotoModal({ photo, onClose }) {
+  const [failed, setFailed] = useState(false);
+  const fullUrl = photo.optimizedUrls?.full || photo.optimizedUrls?.preview || photo.secureUrl || photo.previewUrl;
+  const name = photo.originalFileName || photo.fileName || 'Site Photo';
+
+  return (
+    <div
+      className="modal fade show d-block"
+      tabIndex="-1"
+      style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
+      onClick={onClose}
+    >
+      <div className="modal-dialog modal-dialog-centered modal-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content border-0 rounded-4 overflow-hidden bg-transparent">
+          <div className="modal-body text-center p-3">
+            {!failed && fullUrl ? (
+              <img
+                src={fullUrl}
+                alt={name}
+                className="img-fluid rounded-3 mb-2"
+                style={{ maxHeight: '75vh', objectFit: 'contain' }}
+                onError={() => setFailed(true)}
+              />
+            ) : (
+              <div className="p-5 bg-dark text-white rounded-3 mb-2 text-center">
+                <p className="mb-1 fw-bold">{name}</p>
+                <p className="text-white-50 small mb-0">Image preview unavailable for this legacy record. Size: {photo.sizeKB || 0} KB</p>
               </div>
+            )}
+            <div className="d-flex justify-content-between align-items-center text-white small px-2">
+              <span>{name}</span>
+              {fullUrl && !failed && (
+                <a
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-pocika btn-pocika-ghost text-white btn-sm"
+                >
+                  Open Full Size
+                </a>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
