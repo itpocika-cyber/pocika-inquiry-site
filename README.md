@@ -1,39 +1,28 @@
 # POCIKA Inquiry & Site Visit Management System
 
 ## Project Purpose
-This project is a dedicated Sales Inquiry and Site Visit Management System for **POCIKA FIRE & SAFETY PRODUCTS LLP**. It enables salespeople to rapidly log site visits, collect customer requirements, and attach photos while on the field. It also provides sales managers and administrators with dashboards to track opportunities, follow-ups, and inquiry records with strict data isolation and role-based permissions.
+This project is an internal Sales Inquiry and Site Visit Management System for **POCIKA FIRE & SAFETY PRODUCTS LLP**. It enables salespeople to rapidly log site visits, collect customer requirements, attach site photos, and track follow-ups. It also provides sales managers and administrators with dashboards to track opportunities, review inquiries, and generate PDFs.
 
 ---
 
 ## Architecture & Technology Stack
 
 ### Frontend Architecture
-- **HTML5 & Vanilla JavaScript (ES6+ Modules)**
-- **CSS3 / SCSS** with tailored Apple-inspired, professional dark navy & crimson design system
+- **React 18 & Vite 5** Single Page Application (SPA)
+- **React Router DOM v7** for declarative client-side routing and protected routes
+- **Zustand** for state management (Form data, draft auto-save, and authentication)
+- **CSS3 / SCSS** with the tailored POCIKA design system (Navy `#0B1F33`, Primary Blue `#2563EB`, Background `#F5F7FA`)
 - **Bootstrap 5.3** for layout and responsive grids
-- **Firebase Client SDK (v10.8.1 Modular)** for Google Sign-In and session tokens
+- **Axios** with centralized request interceptors for automatic JWT handling
 
 ### Backend Architecture
 - **Node.js & Express 5** RESTful API
-- **Firebase Admin SDK (v14.4.0)** for server-side token signature and expiry verification
-- **MongoDB & Mongoose (v9.10.1)** for data persistence, User model, and Inquiry model
-- **Zod (v4.6.5)** for declarative runtime request validation
-- **Helmet & Strict CORS** for security header enforcement and cross-origin protection
-
----
-
-## Phase 8: Authentication & Authorization (RBAC)
-
-### Flow
-1. **Google Sign-In**: User logs in with Google on `pages/login.html` using Firebase Client SDK.
-2. **ID Token**: Client acquires a fresh Firebase ID Token.
-3. **API Request**: Centralized `api.js` client attaches `Authorization: Bearer <ID Token>` to all requests.
-4. **Backend Verification**: `server/middleware/auth.js` verifies the token via Firebase Admin SDK.
-5. **Authoritative User & RBAC**: The user's role (`super_admin`, `admin`, `sales_person`, `manager`) and status (`isActive`) are fetched from MongoDB.
-6. **Data Isolation**:
-   - **Salesperson**: Queries are automatically scoped to inquiries where `createdBy.firebaseUid` matches their UID. Access to other inquiries returns `403 Forbidden`.
-   - **Admin / Super Admin**: Access to all inquiries across sales teams and the Admin Dashboard.
-7. **Protected Pages**: Direct URL access to `admin-dashboard.html` or other protected views verifies the authoritative role.
+- **MongoDB & Mongoose (v9.10)** for authoritative data persistence (`Inquiry`, `User`, `Counter`)
+- **JSON Web Tokens (JWT)** & **Bcryptjs** for secure authentication and RBAC
+- **Cloudinary SDK** for cloud image storage and optimized delivery variants
+- **Puppeteer** for server-side inquiry PDF generation
+- **Zod (v4.6)** for runtime request validation
+- **Helmet & Strict CORS** for security header enforcement
 
 ---
 
@@ -42,20 +31,17 @@ This project is a dedicated Sales Inquiry and Site Visit Management System for *
 ### 1. Prerequisites
 - Node.js 18+ installed
 - MongoDB connection string (`MONGODB_URI`)
-- Firebase project with Google Authentication enabled
+- Cloudinary account credentials
 
 ### 2. Environment Configuration
-Copy `.env.example` to `.env` and fill in the required credentials:
+Ensure `.env` contains your database and media configuration:
 ```bash
 PORT=5000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/pocika_inquiry_system
 NODE_ENV=development
-CLIENT_ORIGIN=http://localhost:3000
+JWT_SECRET=your_secure_jwt_secret_key
 
-FIREBASE_PROJECT_ID=pocika-sales-inquiry-system
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@pocika-sales-inquiry-system.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-
+# Cloudinary Media Layer (Photo Storage)
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
@@ -63,54 +49,51 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 ---
 
-## Phase 9: Cloudinary Media Architecture
-- **Sole Media Storage**: Cloudinary is the exclusive cloud image and media storage layer.
-- **Dynamic Delivery Variants**: Generates on-the-fly optimized variants:
-  - `thumbnail`: 250×250 face/content crop for cards and previews
-  - `preview`: 900px wide responsive image for modal inspections
-  - `full`: Lossless/optimized original for high-res downloads
-  - `pdf`: 1200px print-optimized variant for future Quotation / PDF generation
-- **Zero Base64 in Database**: MongoDB exclusively persists photo metadata (`publicId`, `secureUrl`, dimensions, file size, uploader identity).
-- **Safe Drafts**: Photos are retained in local memory during draft editing and only uploaded to Cloudinary on explicit submission.
-- **Compensating Rollback**: Automatic cleanup deletes newly uploaded Cloudinary assets if MongoDB persistence fails.
+### 3. Running the Project
 
-### 3. Run Backend API Server
+#### Run the Express Backend:
 ```bash
+# In the root directory:
+npm run server
+
+# Or inside the server directory:
+cd server && npm run dev
+```
+Backend runs on `http://localhost:5000`.
+
+#### Run the React Frontend:
+```bash
+# In the root directory:
 npm run dev
-# Starts API server on http://localhost:5000
 ```
+Frontend runs on `http://localhost:5173` with an automatic proxy to the Express API.
 
-### 4. Run Frontend Application
+#### Seed Demo Accounts:
 ```bash
-npx serve .
-# Serves application on http://localhost:3000
-# Open http://localhost:3000/pages/login.html
+npm run seed:auth
 ```
-
-### 5. Run Automated Test Suite
-```bash
-npm test
-# Executes the 32-scenario Phase 8 automated test suite
-```
+- **Admin**: `admin@pocika.com` / `Admin@12345` (role: `admin`)
+- **Sales**: `sales@pocika.com` / `Sales@12345` (role: `sales_person`)
+- **Manager**: `manager@pocika.com` / `Manager@12345` (role: `manager`)
 
 ---
 
-## Provisioning User Roles
+### 4. Running Automated Tests
+```bash
+# Run JWT Auth + RBAC test suite:
+node server/tests/jwt-auth-rbac.test.js
 
-To assign or change user roles (`super_admin`, `admin`, `sales_person`, `manager`):
-```bash
-node server/scripts/seed-users.js <firebaseUid> <email> <role> [displayName]
-```
-Example:
-```bash
-node server/scripts/seed-users.js 123456 admin@pocika.com admin "Admin User"
+# Run Cloudinary media test suite:
+node server/tests/cloudinary-media.test.js
+
+# Build the React production bundle:
+npm run build
 ```
 
 ---
 
 ## Documentation
-- [Authentication Architecture](docs/authentication.md)
-- [Authorization & RBAC](docs/authorization.md)
-- [Security Architecture](docs/security.md)
+- [Phase 4 Verification Report](docs/phase4-verification.md)
 - [Canonical Field Mapping](docs/field-mapping.md)
 - [Design System](docs/design-system.md)
+

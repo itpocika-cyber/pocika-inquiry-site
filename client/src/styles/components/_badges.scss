@@ -1,0 +1,72 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.badge-pocika {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  padding: $space-1 $space-3;
+  border-radius: $radius-pill;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  line-height: 1.4;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: $radius-pill;
+    background-color: currentColor;
+  }
+}
+
+// Opportunity statuses — restrained, meaning-driven, not neon
+.badge-hot {
+  background-color: $color-danger-soft;
+  color: $color-danger;
+}
+
+.badge-warm {
+  background-color: $color-warning-soft;
+  color: $color-warning;
+}
+
+.badge-cold {
+  background-color: $color-muted-soft;
+  color: $color-text-muted;
+}
+
+.badge-future-potential {
+  background-color: $color-primary-soft;
+  color: $color-primary-dark;
+}
+
+.badge-dealer-development {
+  background-color: $color-navy-soft;
+  color: $color-navy;
+}
+
+.badge-no-requirement {
+  background-color: $color-muted-soft;
+  color: $color-text-muted;
+  font-weight: $font-weight-medium;
+
+  &::before { display: none; }
+}
+
+// Generic status (draft / submitted / pending review) used on inquiry lists
+.badge-status-draft {
+  background-color: $color-muted-soft;
+  color: $color-text-muted;
+}
+
+.badge-status-submitted {
+  background-color: $color-success-soft;
+  color: $color-success;
+}
+
+.badge-status-pending-review {
+  background-color: $color-warning-soft;
+  color: $color-warning;
+}

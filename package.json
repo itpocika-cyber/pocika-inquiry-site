@@ -5,28 +5,41 @@
   "private": true,
   "description": "POCIKA Sales Inquiry & Site Visit Management System — static frontend (HTML/CSS/SCSS/Bootstrap5/vanilla JS). node_modules is a DEV-ONLY tool to compile SCSS to CSS; nothing here runs at runtime — the shipped app is plain HTML/CSS/JS you can open in any browser.",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "nodemon server/server.js",
+    "server:start": "node server/server.js",
+    "seed:auth": "node server/scripts/seed-auth.js",
     "build:css": "sass scss/main.scss css/main.css --no-source-map",
-    "watch:css": "sass --watch scss/main.scss css/main.css --no-source-map",
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "seed": "node server/scripts/seed.js",
-    "test": "node server/tests/auth-rbac.test.js",
-    "test:media": "node server/tests/cloudinary-media.test.js"
+    "watch:css": "sass --watch scss/main.scss css/main.css --no-source-map"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
     "nodemon": "^3.1.14",
-    "sass": "^1.77.0"
+    "pdf-parse": "^2.4.5",
+    "sass": "^1.77.0",
+    "vite": "^5.4.21"
   },
   "dependencies": {
+    "axios": "^1.20.0",
+    "bcryptjs": "^3.0.3",
+    "bootstrap": "^5.3.8",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "firebase-admin": "^14.4.0",
     "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.46.0",
     "mongoose": "^9.10.1",
     "morgan": "^1.12.1",
     "multer": "^2.4.0",
-    "zod": "^4.6.5"
+    "puppeteer": "^25.11.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
   }
 }

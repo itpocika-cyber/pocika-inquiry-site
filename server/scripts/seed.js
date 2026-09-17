@@ -54,6 +54,11 @@ const seedData = async () => {
         submissionMeta: {
           confirmedBy: 'System Seeder',
           confirmedAt: new Date()
+        },
+        createdBy: {
+          firebaseUid: 'seed-salesperson-uid',
+          email: 'sales@pocika.com',
+          name: 'Rajesh Sharma'
         }
       };
       

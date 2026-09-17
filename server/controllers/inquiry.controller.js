@@ -2,6 +2,7 @@ import { Inquiry } from '../models/Inquiry.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
 import { generateOptimizedUrls } from '../config/cloudinary.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
+import { generateInquiryPdf } from '../services/pdf.service.js';
 
 export const createInquiry = async (req, res, next) => {
   try {
@@ -13,7 +14,8 @@ export const createInquiry = async (req, res, next) => {
     
     // Server-assigned ownership
     data.createdBy = {
-      firebaseUid: req.user.firebaseUid,
+      userId: req.user.id,
+      firebaseUid: req.user.firebaseUid || req.user.id,
       email: req.user.email,
       name: req.user.displayName || req.user.email
     };
@@ -47,7 +49,11 @@ export const getInquiries = async (req, res, next) => {
     // Server-Side Authorization Scope
     // Salespersons can only access their own inquiries
     if (req.user.role === 'sales_person') {
-      query['createdBy.firebaseUid'] = req.user.firebaseUid;
+      query.$or = [
+        { 'createdBy.userId': req.user.id },
+        { 'createdBy.firebaseUid': req.user.firebaseUid || req.user.id },
+        { 'createdBy.email': req.user.email }
+      ];
     } else if (req.query.salesPerson) {
       // Admins/Managers can optionally filter by salesperson
       query.salesPerson = req.query.salesPerson;
@@ -116,7 +122,11 @@ export const getInquiryById = async (req, res, next) => {
 
     // Authorization check: Salesperson can only view their own inquiries
     if (req.user.role === 'sales_person') {
-      if (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid !== req.user.firebaseUid) {
+      const isOwner =
+        (inquiry.createdBy?.userId && inquiry.createdBy.userId === req.user.id) ||
+        (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid === req.user.firebaseUid) ||
+        (inquiry.createdBy?.email && inquiry.createdBy.email === req.user.email);
+      if (!isOwner) {
         return errorResponse(res, {
           code: 'FORBIDDEN',
           message: 'Access denied. You do not have permission to view this inquiry.'
@@ -154,7 +164,11 @@ export const updateInquiry = async (req, res, next) => {
 
     // Authorization check: Salesperson can only update their own inquiries
     if (req.user.role === 'sales_person') {
-      if (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid !== req.user.firebaseUid) {
+      const isOwner =
+        (inquiry.createdBy?.userId && inquiry.createdBy.userId === req.user.id) ||
+        (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid === req.user.firebaseUid) ||
+        (inquiry.createdBy?.email && inquiry.createdBy.email === req.user.email);
+      if (!isOwner) {
         return errorResponse(res, {
           code: 'FORBIDDEN',
           message: 'Access denied. You do not have permission to modify this inquiry.'
@@ -162,25 +176,78 @@ export const updateInquiry = async (req, res, next) => {
       }
     }
 
-    // Strict allowlist of updatable fields (mass assignment protection)
-    const allowedUpdates = ['visit.opportunity', 'followUp.nextAction', 'followUp.followUpDate', 'remarks'];
-    
-    // Only Admin/Super Admin can update status
-    if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
-      allowedUpdates.push('status');
+    const updateData = {};
+
+    // Support both dot-notation and nested object structures
+    if (req.body['requirement.productSpecification'] !== undefined) {
+      updateData['requirement.productSpecification'] = req.body['requirement.productSpecification'];
+    } else if (req.body.requirement?.productSpecification !== undefined) {
+      updateData['requirement.productSpecification'] = req.body.requirement.productSpecification;
     }
 
-    const updateData = {};
-    Object.keys(req.body).forEach(key => {
-      if (allowedUpdates.includes(key)) {
-        updateData[key] = req.body[key];
+    if (req.body['requirement.estimatedQuantity'] !== undefined) {
+      updateData['requirement.estimatedQuantity'] = req.body['requirement.estimatedQuantity'];
+    } else if (req.body.requirement?.estimatedQuantity !== undefined) {
+      updateData['requirement.estimatedQuantity'] = req.body.requirement.estimatedQuantity;
+    }
+
+    if (req.body['commercial.expectedOrderValue'] !== undefined) {
+      const num = Number(req.body['commercial.expectedOrderValue']);
+      updateData['commercial.expectedOrderValue'] = isNaN(num) ? null : num;
+    } else if (req.body.commercial?.expectedOrderValue !== undefined) {
+      const num = Number(req.body.commercial.expectedOrderValue);
+      updateData['commercial.expectedOrderValue'] = isNaN(num) ? null : num;
+    }
+
+    if (req.body['commercial.requirementValue'] !== undefined) {
+      const num = Number(req.body['commercial.requirementValue']);
+      updateData['commercial.requirementValue'] = isNaN(num) ? null : num;
+    } else if (req.body.commercial?.requirementValue !== undefined) {
+      const num = Number(req.body.commercial.requirementValue);
+      updateData['commercial.requirementValue'] = isNaN(num) ? null : num;
+    }
+
+    if (req.body['visit.opportunity'] !== undefined) {
+      updateData['visit.opportunity'] = req.body['visit.opportunity'];
+    } else if (req.body.visit?.opportunity !== undefined) {
+      updateData['visit.opportunity'] = req.body.visit.opportunity;
+    }
+
+    if (req.body['followUp.nextAction'] !== undefined) {
+      updateData['followUp.nextAction'] = Array.isArray(req.body['followUp.nextAction']) ? req.body['followUp.nextAction'] : [req.body['followUp.nextAction']];
+    } else if (req.body.followUp?.nextAction !== undefined) {
+      updateData['followUp.nextAction'] = Array.isArray(req.body.followUp.nextAction) ? req.body.followUp.nextAction : [req.body.followUp.nextAction];
+    }
+
+    if (req.body['followUp.followUpDate'] !== undefined) {
+      updateData['followUp.followUpDate'] = req.body['followUp.followUpDate'];
+    } else if (req.body.followUp?.followUpDate !== undefined) {
+      updateData['followUp.followUpDate'] = req.body.followUp.followUpDate;
+    }
+
+    if (req.body.remarks !== undefined) {
+      updateData.remarks = req.body.remarks;
+    }
+
+    // Only Admin/Super Admin/Manager can update status and managerReview
+    if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+      if (req.body.status !== undefined) {
+        updateData.status = req.body.status;
       }
-    });
+      if (req.body.managerReview !== undefined) {
+        updateData.managerReview = {
+          ...inquiry.managerReview?.toObject(),
+          ...req.body.managerReview,
+          reviewedBy: req.user.displayName || req.user.email,
+          reviewedAt: new Date()
+        };
+      }
+    }
 
     const updatedInquiry = await Inquiry.findByIdAndUpdate(
       inquiry._id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     return successResponse(res, updatedInquiry);
@@ -196,7 +263,11 @@ export const getSummary = async (req, res, next) => {
     
     // Scope summary to salesperson's inquiries if user is sales_person
     if (req.user.role === 'sales_person') {
-      baseQuery['createdBy.firebaseUid'] = req.user.firebaseUid;
+      baseQuery.$or = [
+        { 'createdBy.userId': req.user.id },
+        { 'createdBy.firebaseUid': req.user.firebaseUid || req.user.id },
+        { 'createdBy.email': req.user.email }
+      ];
     }
     
     // Total count
@@ -234,6 +305,67 @@ export const getSummary = async (req, res, next) => {
       pendingFollowUps,
       quotes
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadInquiryPdf = async (req, res, next) => {
+  try {
+    // 1. Fetch inquiry (using same logic as getInquiryById for consistency & security)
+    let inquiry = null;
+    if (req.params.id.startsWith('PSI-') || req.params.id.startsWith('INQ-')) {
+      inquiry = await Inquiry.findOne({ inquiryNumber: req.params.id });
+    } else {
+      inquiry = await Inquiry.findById(req.params.id);
+    }
+    
+    if (!inquiry) {
+      return errorResponse(res, { code: 'NOT_FOUND', message: 'Inquiry not found' }, 404);
+    }
+
+    // 2. Enforce Authorization Role Scoping
+    if (req.user.role === 'sales_person') {
+      const isOwner =
+        (inquiry.createdBy?.userId && inquiry.createdBy.userId === req.user.id) ||
+        (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid === req.user.firebaseUid) ||
+        (inquiry.createdBy?.email && inquiry.createdBy.email === req.user.email);
+      if (!isOwner) {
+        return errorResponse(res, {
+          code: 'FORBIDDEN',
+          message: 'Access denied. You do not have permission to view this inquiry PDF.'
+        }, 403);
+      }
+    }
+
+    const inquiryObj = inquiry.toObject();
+    
+    // Convert to optimized URLs for PDF rendering to save memory
+    if (inquiryObj.photos && inquiryObj.photos.length > 0) {
+      inquiryObj.photos = inquiryObj.photos.map(p => ({
+        ...p,
+        optimizedUrls: generateOptimizedUrls(p.publicId, p.secureUrl)
+      }));
+    }
+
+    // 3. Generate PDF Buffer
+    const pdfBuffer = await generateInquiryPdf(inquiryObj);
+
+    // 4. Send Response
+    const safeFilename = `POCIKA-Inquiry-${inquiryObj.inquiryNumber || 'Document'}.pdf`;
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${safeFilename}"`,
+      'Content-Length': pdfBuffer.length,
+      // Prevent caching of PDFs containing sensitive PII
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
+    res.send(pdfBuffer);
+    
   } catch (error) {
     next(error);
   }

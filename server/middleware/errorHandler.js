@@ -4,10 +4,12 @@ export const errorHandler = (err, req, res, next) => {
   console.error(`[Error] ${err.message}`);
   
   if (err.name === 'ZodError') {
+    const issues = err.issues || err.errors || [];
+    const errorDetails = issues.map(e => `${e.path.length ? e.path.join('.') + ': ' : ''}${e.message}`).join('; ');
     return errorResponse(res, {
       code: 'VALIDATION_ERROR',
-      message: 'Invalid inquiry data',
-      details: err.errors
+      message: `Validation failed: ${errorDetails}`,
+      details: issues
     }, 400);
   }
 
@@ -15,7 +17,7 @@ export const errorHandler = (err, req, res, next) => {
     const details = Object.values(err.errors).map(val => val.message);
     return errorResponse(res, {
       code: 'VALIDATION_ERROR',
-      message: 'Invalid data provided',
+      message: 'Invalid data provided: ' + details.join(', '),
       details
     }, 400);
   }

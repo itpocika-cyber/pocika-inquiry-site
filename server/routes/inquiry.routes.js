@@ -4,7 +4,8 @@ import {
   getInquiries,
   getInquiryById,
   updateInquiry,
-  getSummary
+  getSummary,
+  downloadInquiryPdf
 } from '../controllers/inquiry.controller.js';
 import {
   uploadMiddleware,
@@ -22,6 +23,7 @@ router.get('/summary', authenticateUser, getSummary);
 router.post('/', authenticateUser, validateInquiry, createInquiry);
 router.get('/', authenticateUser, getInquiries);
 router.get('/:id', authenticateUser, getInquiryById);
+router.get('/:id/pdf', authenticateUser, downloadInquiryPdf);
 router.patch('/:id', authenticateUser, updateInquiry);
 
 // Photo endpoints

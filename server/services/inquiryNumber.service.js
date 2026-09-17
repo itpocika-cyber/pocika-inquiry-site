@@ -11,7 +11,7 @@ export const generateInquiryNumber = async () => {
       const counter = await Counter.findByIdAndUpdate(
         counterId,
         { $inc: { seq: 1 } },
-        { new: true, upsert: true, maxTimeMS: 4000 }
+        { returnDocument: 'after', upsert: true, maxTimeMS: 4000 }
       );
       if (counter && counter.seq) {
         const sequenceStr = String(counter.seq).padStart(6, '0');

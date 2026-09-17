@@ -1,0 +1,70 @@
+@use '../abstracts/variables' as *;
+
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $color-text;
+  background-color: $color-bg;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-base;
+  color: $color-navy;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-tight;
+  margin: 0;
+}
+
+// Semantic type scale — used via classes, not raw h1–h6, so hierarchy
+// stays correct regardless of document structure.
+.text-page-title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-navy;
+}
+
+.text-section-title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-navy;
+}
+
+.text-field-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text;
+}
+
+.text-helper {
+  font-size: $font-size-xs;
+  color: $color-text-muted;
+}
+
+.text-muted-custom {
+  color: $color-text-muted;
+}
+
+.text-error {
+  font-size: $font-size-xs;
+  color: $color-danger;
+  font-weight: $font-weight-medium;
+}
+
+p {
+  margin: 0 0 $space-3 0;
+  color: $color-text;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  color: $color-primary;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

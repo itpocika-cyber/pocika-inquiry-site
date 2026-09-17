@@ -1,18 +1,21 @@
-import { initFirebase } from '../config/firebase.js';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { errorResponse } from '../utils/apiResponse.js';
 import mongoose from 'mongoose';
 
-const authInstance = initFirebase();
+const JWT_SECRET = process.env.JWT_SECRET || 'pocika_jwt_secret_secure_key_2026';
 
 /**
- * Authenticates a request using Firebase Admin SDK and attaches the user document to req.user.
+ * Authenticates a request using JWT and attaches the user document to req.user.
  */
 export const authenticateUser = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   // Reject missing Authorization header
   if (!authHeader) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[Auth Debug] Missing Authorization header on ${req.method} ${req.originalUrl}`);
+    }
     return errorResponse(res, {
       code: 'UNAUTHORIZED',
       message: 'Authentication required.'
@@ -21,6 +24,9 @@ export const authenticateUser = async (req, res, next) => {
 
   // Reject malformed Authorization header
   if (!authHeader.startsWith('Bearer ') || authHeader.split(' ').length !== 2) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[Auth Debug] Malformed Authorization header on ${req.method} ${req.originalUrl}`);
+    }
     return errorResponse(res, {
       code: 'INVALID_TOKEN_FORMAT',
       message: 'Authentication required. Invalid token format.'
@@ -29,27 +35,20 @@ export const authenticateUser = async (req, res, next) => {
 
   const token = authHeader.split('Bearer ')[1].trim();
   if (!token) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[Auth Debug] Empty token on ${req.method} ${req.originalUrl}`);
+    }
     return errorResponse(res, {
       code: 'EMPTY_TOKEN',
       message: 'Authentication required. Token is empty.'
     }, 401);
   }
 
-  // If Firebase Admin is not initialized
-  if (!authInstance) {
-    console.error('Firebase Admin SDK is not initialized. Check server environment variables.');
-    return errorResponse(res, {
-      code: 'AUTH_SERVICE_UNAVAILABLE',
-      message: 'Authentication service unavailable.'
-    }, 503);
-  }
-
-  let decodedToken;
+  let decoded;
   try {
-    decodedToken = await authInstance.verifyIdToken(token);
+    decoded = jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    // Distinguish expired vs invalid token
-    if (error.code === 'auth/id-token-expired') {
+    if (error.name === 'TokenExpiredError') {
       return errorResponse(res, {
         code: 'TOKEN_EXPIRED',
         message: 'Your session has expired. Please sign in again.'
@@ -61,69 +60,54 @@ export const authenticateUser = async (req, res, next) => {
     }, 401);
   }
 
-  const { uid, email, name, picture } = decodedToken;
+  const userId = decoded.id || decoded.userId || decoded.uid;
+  const email = (decoded.email || '').toLowerCase().trim();
 
   try {
-    // If DB is connected, fetch or provision the user in MongoDB
     if (mongoose.connection.readyState === 1) {
-      let user = await User.findOne({ firebaseUid: uid });
-
-      const normalizedEmail = (email || `${uid}@pocika.local`).toLowerCase().trim();
-      const isAdminAccount = normalizedEmail === 'admin@pocika.com';
+      let user = null;
+      if (userId && mongoose.isValidObjectId(userId)) {
+        user = await User.findById(userId);
+      }
+      if (!user && email) {
+        user = await User.findOne({ email });
+      }
 
       if (!user) {
-        // Safe first-login provisioning: admin@pocika.com gets admin, others get sales_person
-        user = await User.create({
-          firebaseUid: uid,
-          email: normalizedEmail,
-          displayName: name || decodedToken.displayName || (isAdminAccount ? 'Administrator' : ''),
-          photoURL: picture || decodedToken.picture || '',
-          role: isAdminAccount ? 'admin' : 'sales_person',
-          isActive: true,
-          lastLoginAt: new Date()
-        });
-        console.log(`Provisioned new user: ${user.email} with role ${user.role}`);
-      } else {
-        // Inactive user check: return 403 Forbidden
-        if (!user.isActive) {
-          return errorResponse(res, {
-            code: 'ACCOUNT_INACTIVE',
-            message: 'Your account is inactive. Contact an administrator.'
-          }, 403);
-        }
+        return errorResponse(res, {
+          code: 'USER_NOT_FOUND',
+          message: 'User associated with token does not exist.'
+        }, 401);
+      }
 
-        // Ensure admin@pocika.com has admin role
-        if (isAdminAccount && user.role !== 'admin' && user.role !== 'super_admin') {
-          user.role = 'admin';
-        }
-
-        // Update last login timestamp & sync display name/photo if updated
-        user.lastLoginAt = new Date();
-        if (name && !user.displayName) user.displayName = name;
-        if (picture && !user.photoURL) user.photoURL = picture;
-        await user.save();
+      if (!user.isActive) {
+        return errorResponse(res, {
+          code: 'ACCOUNT_INACTIVE',
+          message: 'Your account is inactive. Contact an administrator.'
+        }, 403);
       }
 
       // Attach authoritative user object to request
       req.user = {
         id: user._id.toString(),
-        firebaseUid: user.firebaseUid,
+        userId: user._id.toString(),
+        firebaseUid: user.firebaseUid || user._id.toString(),
         email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || '',
         role: user.role,
         isActive: user.isActive
       };
     } else {
-      // If DB is offline (e.g. Atlas connection timeout), provide safe fallback context
-      console.warn('Database is disconnected; continuing with verified token context.');
+      // Safe fallback context if DB is temporarily disconnected
       req.user = {
-        id: uid,
-        firebaseUid: uid,
-        email: (email || '').toLowerCase().trim(),
-        displayName: name || '',
-        photoURL: picture || '',
-        role: (email || '').toLowerCase() === 'admin@pocika.com' ? 'admin' : 'sales_person',
+        id: userId || 'fallback-id',
+        userId: userId || 'fallback-id',
+        firebaseUid: decoded.firebaseUid || userId || 'fallback-id',
+        email: email,
+        displayName: decoded.displayName || decoded.name || email.split('@')[0],
+        photoURL: decoded.photoURL || '',
+        role: decoded.role || (email === 'admin@pocika.com' ? 'admin' : 'sales_person'),
         isActive: true
       };
     }
@@ -140,3 +124,4 @@ export const authenticateUser = async (req, res, next) => {
 
 // Backwards-compatible alias for existing imports
 export const requireAuth = authenticateUser;
+

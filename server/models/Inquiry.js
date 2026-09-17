@@ -85,7 +85,8 @@ const inquirySchema = new mongoose.Schema({
     previewUrl: { type: String, default: '' }, // backwards compatibility
     sizeKB: { type: Number, default: 0 }, // backwards compatibility
     uploadedBy: {
-      firebaseUid: { type: String, required: true },
+      userId: { type: String, default: '' },
+      firebaseUid: { type: String, default: '' },
       email: { type: String, required: true }
     },
     uploadedAt: { type: Date, default: Date.now },
@@ -97,8 +98,16 @@ const inquirySchema = new mongoose.Schema({
     confirmedAt: { type: Date, default: Date.now }
   },
 
+  managerReview: {
+    status: { type: String, enum: ['Pending', 'Reviewed', 'Approved', 'Rejected'], default: 'Pending' },
+    reviewedBy: { type: String, default: '' },
+    reviewedAt: { type: Date, default: null },
+    remarks: { type: String, default: '' }
+  },
+
   createdBy: {
-    firebaseUid: { type: String, required: true, index: true },
+    userId: { type: String, default: '', index: true },
+    firebaseUid: { type: String, default: '', index: true },
     email: { type: String, required: true },
     name: { type: String, default: '' }
   }
@@ -107,13 +116,11 @@ const inquirySchema = new mongoose.Schema({
 });
 
 // Indexes for common dashboard queries
-inquirySchema.index({ inquiryNumber: 1 });
 inquirySchema.index({ 'customer.companyName': 1 });
 inquirySchema.index({ salesPerson: 1 });
 inquirySchema.index({ 'visit.opportunity': 1 });
 inquirySchema.index({ 'followUp.followUpDate': 1 });
 inquirySchema.index({ date: 1 });
 inquirySchema.index({ status: 1 });
-inquirySchema.index({ 'createdBy.firebaseUid': 1 });
 
 export const Inquiry = mongoose.model('Inquiry', inquirySchema);

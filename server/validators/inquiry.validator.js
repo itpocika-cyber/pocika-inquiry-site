@@ -1,73 +1,107 @@
 import { z } from 'zod';
 
+// Helper for numeric fields that could be empty string, null, undefined, or formatted string
+const coerceToNullableNumber = z.preprocess((val) => {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') return isNaN(val) ? null : val;
+  if (typeof val === 'string') {
+    const cleaned = val.replace(/[^0-9.-]/g, '');
+    if (!cleaned) return null;
+    const num = Number(cleaned);
+    return isNaN(num) ? null : num;
+  }
+  return null;
+}, z.number().nullable().optional().default(null));
+
+// Helper for optional strings that defaults to empty string and trims whitespace
+const optionalTrimmedString = z.preprocess(
+  (val) => (val === null || val === undefined ? '' : String(val).trim()),
+  z.string().default('')
+);
+
 export const inquirySchema = z.object({
-  date: z.string().min(1, 'Date is required'),
-  salesPerson: z.string().optional().default(''),
+  date: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Date is required')),
+  salesPerson: optionalTrimmedString,
+  status: z.enum(['draft', 'submitted']).optional().default('submitted'),
   
   customer: z.object({
-    companyName: z.string().min(1, 'Company Name is required'),
-    contactPerson: z.string().min(1, 'Contact Person is required'),
-    designation: z.string().optional().default(''),
-    mobile: z.string().regex(/^\d{10}$/, 'Invalid mobile number format'),
-    email: z.string().email('Invalid email address').or(z.literal('')),
-    billingAddress: z.string().optional().default(''),
-    siteLocation: z.string().min(1, 'Site Location is required'),
-    gstNo: z.string().optional().default('')
+    companyName: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Company Name is required')),
+    contactPerson: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Contact Person is required')),
+    designation: optionalTrimmedString,
+    mobile: z.preprocess((val) => {
+      if (!val) return '';
+      let clean = String(val).replace(/[\s-]/g, '');
+      if (clean.startsWith('+91')) clean = clean.substring(3);
+      if (clean.startsWith('0') && clean.length === 11) clean = clean.substring(1);
+      return clean;
+    }, z.string().regex(/^\d{10}$/, 'Mobile number must be exactly 10 digits')),
+    email: z.preprocess((val) => (val === null || val === undefined ? '' : String(val).trim()), z.string().email('Invalid email address').or(z.literal(''))).optional().default(''),
+    billingAddress: optionalTrimmedString,
+    siteLocation: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Site Location is required')),
+    gstNo: optionalTrimmedString
   }),
   
   business: z.object({
-    customerType: z.string().min(1, 'Customer Type is required'),
-    customerTypeOther: z.string().optional().default(''),
-    industryType: z.string().optional().default(''),
-    locationGidc: z.string().optional().default(''),
-    facility: z.string().min(1, 'Facility is required'),
-    facilityOther: z.string().optional().default(''),
-    areaSqft: z.union([z.number(), z.string().transform(val => val === '' ? null : Number(val))]).nullable().default(null),
-    floors: z.union([z.number(), z.string().transform(val => val === '' ? null : Number(val))]).nullable().default(null),
-    status: z.string().min(1, 'Status is required'),
-    expectedDate: z.string().optional().default('')
+    customerType: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Customer Type is required')),
+    customerTypeOther: optionalTrimmedString,
+    industryType: optionalTrimmedString,
+    locationGidc: optionalTrimmedString,
+    facility: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Facility is required')),
+    facilityOther: optionalTrimmedString,
+    areaSqft: coerceToNullableNumber,
+    floors: coerceToNullableNumber,
+    status: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Status is required')),
+    expectedDate: optionalTrimmedString
   }),
   
-  products: z.array(z.string()).min(1, 'At least one product is required'),
-  productOther: z.string().optional().default(''),
+  products: z.preprocess((val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    return [String(val)];
+  }, z.array(z.string()).min(1, 'At least one product is required')),
+  productOther: optionalTrimmedString,
   
   requirement: z.object({
-    productSpecification: z.string().optional().default(''),
-    estimatedQuantity: z.string().optional().default(''),
-    currentBrand: z.string().optional().default(''),
-    currentPurchase: z.string().optional().default(''),
-    reason: z.string().optional().default('')
+    productSpecification: optionalTrimmedString,
+    estimatedQuantity: optionalTrimmedString,
+    currentBrand: optionalTrimmedString,
+    currentPurchase: optionalTrimmedString,
+    reason: optionalTrimmedString
   }).optional().default({}),
   
   commercial: z.object({
-    requirementValue: z.union([z.number(), z.string().transform(val => val === '' ? null : Number(val))]).nullable().default(null),
-    expectedOrderValue: z.union([z.number(), z.string().transform(val => val === '' ? null : Number(val))]).nullable().default(null),
-    budget: z.string().optional().default(''),
-    paymentTerms: z.string().optional().default(''),
-    decisionMakerName: z.string().optional().default(''),
-    decisionMakerDesignation: z.string().optional().default(''),
-    decisionRole: z.string().optional().default(''),
-    purchaseDecisionBy: z.string().optional().default(''),
-    competitors: z.string().optional().default('')
+    requirementValue: coerceToNullableNumber,
+    expectedOrderValue: coerceToNullableNumber,
+    budget: optionalTrimmedString,
+    paymentTerms: optionalTrimmedString,
+    decisionMakerName: optionalTrimmedString,
+    decisionMakerDesignation: optionalTrimmedString,
+    decisionRole: optionalTrimmedString,
+    purchaseDecisionBy: optionalTrimmedString,
+    competitors: optionalTrimmedString
   }).optional().default({}),
   
   visit: z.object({
-    visitType: z.string().min(1, 'Visit Type is required'),
-    personMet: z.string().optional().default(''),
-    requirementDiscussed: z.string().optional().default(''),
-    photos: z.string().min(1, 'Photos requirement is required'),
-    opportunity: z.string().min(1, 'Opportunity is required')
+    visitType: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Visit Type is required')),
+    personMet: optionalTrimmedString,
+    requirementDiscussed: optionalTrimmedString,
+    photos: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Photos requirement is required')),
+    opportunity: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Opportunity is required'))
   }),
   
   followUp: z.object({
-    nextAction: z.array(z.string()).optional().default([]),
-    nextVisitType: z.string().optional().default(''),
-    quotationDate: z.string().optional().default(''),
-    followUpDate: z.string().min(1, 'Follow Up Date is required'),
-    nextActionCommitment: z.string().optional().default('')
+    nextAction: z.preprocess((val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      return [String(val)];
+    }, z.array(z.string()).default([])),
+    nextVisitType: optionalTrimmedString,
+    quotationDate: optionalTrimmedString,
+    followUpDate: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Follow Up Date is required')),
+    nextActionCommitment: optionalTrimmedString
   }),
   
-  remarks: z.string().optional().default(''),
+  remarks: optionalTrimmedString,
   
   photos: z.array(z.record(z.any())).optional().default([])
 });
@@ -81,3 +115,4 @@ export const validateInquiry = (req, res, next) => {
     next(error); // pass to errorHandler which handles ZodError
   }
 };
+

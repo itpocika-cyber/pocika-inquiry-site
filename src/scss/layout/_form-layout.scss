@@ -1,0 +1,36 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.form-page {
+  padding-block: $space-5;
+
+  @include up($bp-md) {
+    padding-block: $space-7;
+  }
+}
+
+.form-shell {
+  max-width: $form-max-width;
+  margin-inline: auto;
+  padding-inline: $space-4;
+}
+
+.form-header {
+  margin-bottom: $space-5;
+}
+
+.form-step-panel {
+  @include card-surface;
+  padding: $space-5;
+
+  @include up($bp-md) {
+    padding: $space-6;
+  }
+}
+
+.form-fieldset-title {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-navy;
+  margin-bottom: $space-4;
+}
