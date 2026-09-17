@@ -124,24 +124,17 @@ export const generateInquiryPdf = async (inquiry) => {
     const billingAddress = inquiry.customer?.billingAddress || inquiry.customer?.siteLocation || '-';
 
     let optionalSiteAddressRow = '';
-    if (inquiry.customer?.siteLocation && inquiry.customer?.siteLocation !== inquiry.customer?.billingAddress) {
+    if (inquiry.customer?.siteLocation || inquiry.customer?.gstNo) {
       optionalSiteAddressRow = `
         <div class="field-row">
-          <div class="field-cell-full">
+          <div class="field-cell">
             <div class="f-label">Site / Visit Location</div>
-            <div class="f-val">${escapeHtml(inquiry.customer.siteLocation)}</div>
+            <div class="f-val">${escapeHtml(inquiry.customer?.siteLocation || '-')}</div>
           </div>
-        </div>
-      `;
-    }
-    if (inquiry.customer?.gstNo) {
-      optionalSiteAddressRow += `
-        <div class="field-row">
           <div class="field-cell">
             <div class="f-label">GST No.</div>
-            <div class="f-val">${escapeHtml(inquiry.customer.gstNo)}</div>
+            <div class="f-val">${escapeHtml(inquiry.customer?.gstNo || '-')}</div>
           </div>
-          <div class="field-cell"></div>
         </div>
       `;
     }
@@ -165,18 +158,7 @@ export const generateInquiryPdf = async (inquiry) => {
     if (inquiry.business?.floors) areaParts.push(`${inquiry.business.floors} Floors`);
     const areaFloorsText = areaParts.length > 0 ? areaParts.join('  /  ') : '-';
 
-    // Expected Date Row
-    let expectedDateRow = '';
-    if (inquiry.business?.expectedDate) {
-      expectedDateRow = `
-        <div class="field-row">
-          <div class="field-cell-full">
-            <div class="f-label">Expected Requirement Date</div>
-            <div class="f-val">${escapeHtml(formatDateStr(inquiry.business.expectedDate))}</div>
-          </div>
-        </div>
-      `;
-    }
+    const expectedDateVal = formatDateStr(inquiry.business?.expectedDate) || '-';
 
     // 4. Products & Requirement Details
     const productBadges = (inquiry.products || []).map(p => {
@@ -187,19 +169,8 @@ export const generateInquiryPdf = async (inquiry) => {
     const productSpecification = inquiry.requirement?.productSpecification || '-';
     const estimatedQuantity = inquiry.requirement?.estimatedQuantity || '-';
     const purchaseReason = inquiry.requirement?.reason || '-';
+    const currentBrandVal = inquiry.requirement?.currentBrand || '-';
     const currentPurchase = inquiry.requirement?.currentPurchase || '-';
-
-    let optionalCurrentBrandRow = '';
-    if (inquiry.requirement?.currentBrand) {
-      optionalCurrentBrandRow = `
-        <div class="field-row">
-          <div class="field-cell-full">
-            <div class="f-label">Current Brand / Supplier</div>
-            <div class="f-val">${escapeHtml(inquiry.requirement.currentBrand)}</div>
-          </div>
-        </div>
-      `;
-    }
 
     // 5. Commercial & Sales Qualification
     const requirementValue = formatCurrency(inquiry.commercial?.requirementValue) || '-';
@@ -215,23 +186,16 @@ export const generateInquiryPdf = async (inquiry) => {
     const decisionMakerFull = dmFull || '-';
 
     const purchaseDecisionBy = formatDateStr(inquiry.commercial?.purchaseDecisionBy) || inquiry.commercial?.purchaseDecisionBy || '-';
+    const paymentTermsVal = inquiry.commercial?.paymentTerms || '-';
 
-    let optionalCommercialDetailsRow = '';
-    if (inquiry.commercial?.paymentTerms || inquiry.commercial?.competitors) {
-      optionalCommercialDetailsRow = `
+    let optionalCompetitorsRow = '';
+    if (inquiry.commercial?.competitors) {
+      optionalCompetitorsRow = `
         <div class="field-row">
-          ${inquiry.commercial?.paymentTerms ? `
-            <div class="field-cell">
-              <div class="f-label">Payment Terms</div>
-              <div class="f-val">${escapeHtml(inquiry.commercial.paymentTerms)}</div>
-            </div>
-          ` : '<div class="field-cell"></div>'}
-          ${inquiry.commercial?.competitors ? `
-            <div class="field-cell">
-              <div class="f-label">Competitor / Brands</div>
-              <div class="f-val">${escapeHtml(inquiry.commercial.competitors)}</div>
-            </div>
-          ` : '<div class="field-cell"></div>'}
+          <div class="field-cell-full">
+            <div class="f-label">Competitor / Brands</div>
+            <div class="f-val">${escapeHtml(inquiry.commercial.competitors)}</div>
+          </div>
         </div>
       `;
     }
@@ -307,7 +271,7 @@ export const generateInquiryPdf = async (inquiry) => {
           <div class="photo-card">
             <div class="photo-img-wrap">
               <div class="photo-tag">Site Photo ${idx + 1}</div>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                 <polyline points="21 15 16 10 5 21"></polyline>
@@ -350,21 +314,22 @@ export const generateInquiryPdf = async (inquiry) => {
       FACILITY: escapeHtml(facility),
       STATUS: escapeHtml(status),
       AREA_FLOORS: escapeHtml(areaFloorsText),
-      EXPECTED_DATE_ROW: expectedDateRow,
+      EXPECTED_DATE_VAL: escapeHtml(expectedDateVal),
 
       PRODUCT_BADGES: productBadges,
       PRODUCT_SPECIFICATION: escapeHtml(productSpecification),
       ESTIMATED_QUANTITY: escapeHtml(estimatedQuantity),
       PURCHASE_REASON: escapeHtml(purchaseReason),
+      CURRENT_BRAND_VAL: escapeHtml(currentBrandVal),
       CURRENT_PURCHASE: escapeHtml(currentPurchase),
-      OPTIONAL_CURRENT_BRAND_ROW: optionalCurrentBrandRow,
 
       REQUIREMENT_VALUE: escapeHtml(requirementValue),
       BUDGET: escapeHtml(budget),
       EXPECTED_VALUE: escapeHtml(expectedValue),
       DECISION_MAKER_FULL: escapeHtml(decisionMakerFull),
       PURCHASE_DECISION_BY: escapeHtml(purchaseDecisionBy),
-      OPTIONAL_COMMERCIAL_DETAILS_ROW: optionalCommercialDetailsRow,
+      PAYMENT_TERMS_VAL: escapeHtml(paymentTermsVal),
+      OPTIONAL_COMPETITORS_ROW: optionalCompetitorsRow,
 
       VISIT_TYPE: escapeHtml(visitType),
       PERSON_MET: escapeHtml(personMet),
@@ -387,6 +352,8 @@ export const generateInquiryPdf = async (inquiry) => {
     for (const [key, val] of Object.entries(replacements)) {
       finalHtml = finalHtml.replaceAll(new RegExp(`{{${key}}}`, 'g'), val);
     }
+
+    await fs.writeFile(path.join(__dirname, '../../debug-inq41.html'), finalHtml);
 
     // 11. Launch Puppeteer & Generate PDF
     browser = await puppeteer.launch({
