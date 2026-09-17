@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -7,10 +8,15 @@ import api from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
 export default function ManageTeam() {
+  const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   // Filters
   const [search, setSearch] = useState('');
@@ -277,66 +283,115 @@ export default function ManageTeam() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => {
-                    const isSelf = u.id === currentUser?.id || u.userId === currentUser?.userId;
-                    return (
-                      <tr key={u.id || u.userId}>
-                        <td className="ps-4">
-                          <div className="d-flex align-items-center gap-3">
-                            <div
-                              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                              style={{
-                                width: '38px',
-                                height: '38px',
-                                background: u.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9'
-                              }}
-                            >
-                              {(u.displayName || u.email).slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="fw-semibold">
-                                {u.displayName}
-                                {isSelf && <span className="badge bg-secondary ms-2" style={{ fontSize: '0.65rem' }}>You</span>}
+                  {(() => {
+                    const totalPages = Math.ceil(users.length / pageSize) || 1;
+                    const paginatedUsers = users.slice((page - 1) * pageSize, page * pageSize);
+
+                    return paginatedUsers.map((u) => {
+                      const isSelf = u.id === currentUser?.id || u.userId === currentUser?.userId;
+                      const memberId = u.id || u.userId || u._id;
+                      return (
+                        <tr
+                          key={memberId}
+                          onClick={() => navigate(`/admin/team/${memberId}`)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td className="ps-4">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  background: u.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9'
+                                }}
+                              >
+                                {(u.displayName || u.email).slice(0, 2).toUpperCase()}
                               </div>
-                              <div className="small text-muted">{u.email}</div>
+                              <div>
+                                <div className="fw-semibold">
+                                  {u.displayName}
+                                  {isSelf && <span className="badge bg-secondary ms-2" style={{ fontSize: '0.65rem' }}>You</span>}
+                                </div>
+                                <div className="small text-muted">{u.email}</div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={getRoleBadgeClass(u.role)}>
-                            {u.role?.replace('_', ' ').toUpperCase()}
-                          </span>
-                        </td>
-                        <td>
-                          {u.isActive ? (
-                            <span className="badge bg-success">Active</span>
-                          ) : (
-                            <span className="badge bg-secondary">Inactive</span>
-                          )}
-                        </td>
-                        <td className="small text-muted">
-                          {formatDate(u.lastLoginAt)}
-                        </td>
-                        <td className="small text-muted">
-                          {formatDate(u.createdAt)}
-                        </td>
-                        <td className="text-end pe-4">
-                          <button
-                            type="button"
-                            className={`btn-pocika btn-sm ${u.isActive ? 'btn-pocika-secondary' : 'btn-pocika-primary'}`}
-                            disabled={isSelf}
-                            onClick={() => handleToggleStatus(u)}
-                            title={isSelf ? 'Cannot deactivate self' : u.isActive ? 'Deactivate user access' : 'Activate user access'}
-                          >
-                            {u.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td>
+                            <span className={getRoleBadgeClass(u.role)}>
+                              {u.role?.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            {u.isActive ? (
+                              <span className="badge bg-success">Active</span>
+                            ) : (
+                              <span className="badge bg-secondary">Inactive</span>
+                            )}
+                          </td>
+                          <td className="small text-muted">
+                            {formatDate(u.lastLoginAt)}
+                          </td>
+                          <td className="small text-muted">
+                            {formatDate(u.createdAt)}
+                          </td>
+                          <td className="text-end pe-4">
+                            <div className="d-inline-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                className="btn-pocika btn-pocika-ghost btn-sm"
+                                onClick={() => navigate(`/admin/team/${memberId}`)}
+                              >
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn-pocika btn-sm ${u.isActive ? 'btn-pocika-secondary' : 'btn-pocika-primary'}`}
+                                disabled={isSelf}
+                                onClick={() => handleToggleStatus(u)}
+                                title={isSelf ? 'Cannot deactivate self' : u.isActive ? 'Deactivate user access' : 'Activate user access'}
+                              >
+                                {u.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {users.length > pageSize && (
+              <div className="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+                <div className="small text-muted">
+                  Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, users.length)} of {users.length} members
+                </div>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-pocika btn-pocika-ghost btn-sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage(page - 1)}
+                  >
+                    Previous
+                  </button>
+                  <span className="small align-self-center px-2 text-muted">
+                    Page {page} of {Math.ceil(users.length / pageSize)}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-pocika btn-pocika-ghost btn-sm"
+                    disabled={page >= Math.ceil(users.length / pageSize)}
+                    onClick={() => setPage(page + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

@@ -28,6 +28,8 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [salespeopleList, setSalespeopleList] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [followUpFilter, setFollowUpFilter] = useState('all');
 
   // Manager Review Modal State
   const [reviewInquiry, setReviewInquiry] = useState(null);
@@ -51,9 +53,10 @@ export default function AdminDashboard() {
       if (opportunity) params.append('opportunity', opportunity);
       if (salesperson) params.append('salesPerson', salesperson);
 
-      const [sumRes, inqRes] = await Promise.all([
+      const [sumRes, inqRes, fuRes] = await Promise.all([
         api.get('/inquiries/summary'),
-        api.get(`/inquiries?${params.toString()}`)
+        api.get(`/inquiries?${params.toString()}`),
+        api.get('/inquiries?hasFollowUp=true&sortBy=nextFollowUpDate&limit=50')
       ]);
 
       if (sumRes.data) setSummary(sumRes.data);
@@ -61,6 +64,9 @@ export default function AdminDashboard() {
         const items = inqRes.data.items || [];
         setInquiries(items);
         setTotalPages(inqRes.data.pagination?.totalPages || 1);
+      }
+      if (fuRes.data?.items) {
+        setFollowUps(fuRes.data.items);
       }
     } catch (err) {
       console.warn('Admin fetch warning:', err.message);
@@ -157,6 +163,22 @@ export default function AdminDashboard() {
       return d;
     }
   };
+
+  const today = new Date().toISOString().split('T')[0];
+  const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+  const overdueFollowUps = followUps.filter(
+    (x) => x.followUp?.followUpDate && x.followUp.followUpDate < today && x.status !== 'Won' && x.status !== 'Lost'
+  );
+  const todayFollowUps = followUps.filter((x) => x.followUp?.followUpDate === today);
+  const weekFollowUps = followUps.filter(
+    (x) => x.followUp?.followUpDate && x.followUp.followUpDate >= today && x.followUp.followUpDate <= weekAhead
+  );
+
+  let displayedFollowUps = followUps;
+  if (followUpFilter === 'overdue') displayedFollowUps = overdueFollowUps;
+  else if (followUpFilter === 'today') displayedFollowUps = todayFollowUps;
+  else if (followUpFilter === 'this_week') displayedFollowUps = weekFollowUps;
 
   return (
     <div className="admin-layout">
@@ -292,6 +314,131 @@ export default function AdminDashboard() {
                 <div className="fs-3 fw-bold text-info">{summary.quotes || 0}</div>
               </div>
             </div>
+          </div>
+
+          {/* Team Follow-ups & Reminders Card */}
+          <div className="card-pocika p-4 mb-4">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom pb-3 mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <h2 className="text-field-label m-0" style={{ fontSize: '1.1rem' }}>
+                  Team Follow-ups & Reminders
+                </h2>
+                <span className="badge bg-primary rounded-pill small">
+                  {followUps.length}
+                </span>
+              </div>
+
+              {/* Filter Pills */}
+              <div className="d-flex flex-wrap gap-1">
+                {[
+                  { key: 'all', label: 'All', count: followUps.length },
+                  { key: 'overdue', label: 'Overdue', count: overdueFollowUps.length, badgeCls: 'bg-danger text-white' },
+                  { key: 'today', label: 'Today', count: todayFollowUps.length, badgeCls: 'bg-warning text-dark' },
+                  { key: 'this_week', label: 'Next 7 Days', count: weekFollowUps.length }
+                ].map((pill) => (
+                  <button
+                    key={pill.key}
+                    type="button"
+                    className={`btn btn-sm py-1 px-3 d-inline-flex align-items-center gap-1 ${
+                      followUpFilter === pill.key
+                        ? 'btn-primary'
+                        : 'btn-outline-secondary'
+                    }`}
+                    style={{ fontSize: '0.8rem', borderRadius: '16px' }}
+                    onClick={() => setFollowUpFilter(pill.key)}
+                  >
+                    <span>{pill.label}</span>
+                    {pill.count > 0 && (
+                      <span
+                        className={`badge ${
+                          followUpFilter === pill.key
+                            ? 'bg-white text-primary'
+                            : pill.badgeCls || 'bg-light text-secondary border'
+                        }`}
+                        style={{ fontSize: '0.7rem', padding: '1px 6px' }}
+                      >
+                        {pill.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {displayedFollowUps.length === 0 ? (
+              <div className="text-muted small py-3 text-center">
+                No {followUpFilter !== 'all' ? followUpFilter.replace('_', ' ') : ''} follow-ups scheduled across the team.
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Inquiry No.</th>
+                      <th>Company</th>
+                      <th>Salesperson</th>
+                      <th>Follow-up Date</th>
+                      <th>Opportunity</th>
+                      <th>Next Action</th>
+                      <th className="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedFollowUps.slice(0, 6).map((inq) => {
+                      const isOverdue = inq.followUp?.followUpDate && inq.followUp.followUpDate < today && inq.status !== 'Won' && inq.status !== 'Lost';
+                      const isToday = inq.followUp?.followUpDate === today;
+
+                      return (
+                        <tr key={inq._id || inq.inquiryNumber}>
+                          <td className="fw-semibold">
+                            <Link to={`/inquiries/${inq.inquiryNumber || inq._id}`} className="text-primary text-decoration-none">
+                              {inq.inquiryNumber}
+                            </Link>
+                          </td>
+                          <td className="fw-medium">{inq.customer?.companyName || 'Unknown'}</td>
+                          <td>
+                            <span className="badge bg-light text-dark border">
+                              {inq.salesPerson || '-'}
+                            </span>
+                          </td>
+                          <td>
+                            {isOverdue ? (
+                              <span className="badge bg-danger text-white">
+                                Overdue ({formatDate(inq.followUp?.followUpDate)})
+                              </span>
+                            ) : isToday ? (
+                              <span className="badge bg-warning text-dark">
+                                Today
+                              </span>
+                            ) : (
+                              <span className="badge bg-light text-dark border">
+                                {formatDate(inq.followUp?.followUpDate)}
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                              {inq.visit?.opportunity || '-'}
+                            </span>
+                          </td>
+                          <td className="small text-muted">
+                            {Array.isArray(inq.followUp?.nextAction) ? inq.followUp.nextAction.join(', ') : inq.followUp?.nextAction || 'Follow-up'}
+                          </td>
+                          <td className="text-end">
+                            <Link
+                              to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                              className="btn-pocika btn-pocika-ghost btn-sm"
+                            >
+                              View &rarr;
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Filter Bar */}

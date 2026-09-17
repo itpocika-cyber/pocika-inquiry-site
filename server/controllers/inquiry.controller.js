@@ -1,4 +1,4 @@
-import { Inquiry } from '../models/Inquiry.js';
+import { Inquiry, computeCompanyKey } from '../models/Inquiry.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
 import { generateOptimizedUrls } from '../config/cloudinary.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
@@ -78,9 +78,21 @@ export const getInquiries = async (req, res, next) => {
       query.status = req.query.status;
     }
 
+    // Follow-up Date Filters
+    if (req.query.hasFollowUp === 'true') {
+      query['followUp.followUpDate'] = { $exists: true, $nin: ['', null] };
+    }
+    if (req.query.followUpFrom || req.query.followUpTo) {
+      query['followUp.followUpDate'] = query['followUp.followUpDate'] || {};
+      if (req.query.followUpFrom) query['followUp.followUpDate'].$gte = req.query.followUpFrom;
+      if (req.query.followUpTo) query['followUp.followUpDate'].$lte = req.query.followUpTo;
+    }
+
     // Sorting
     let sortObj = { date: -1 }; // default newest
-    if (req.query.sort) {
+    if (req.query.sortBy === 'nextFollowUpDate' || req.query.sort === 'followup') {
+      sortObj = { 'followUp.followUpDate': 1 };
+    } else if (req.query.sort) {
       switch (req.query.sort) {
         case 'newest': sortObj = { date: -1 }; break;
         case 'oldest': sortObj = { date: 1 }; break;
@@ -99,7 +111,89 @@ export const getInquiries = async (req, res, next) => {
 
     return successResponse(res, {
       items,
+      inquiries: items,
+      total,
       pagination: { page, limit, total, totalPages }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Company History & Prior Visits Lookup
+ */
+export const getCompanyHistory = async (req, res, next) => {
+  try {
+    const { companyName, mobile, excludeId } = req.query;
+    if (!companyName && !mobile) {
+      return successResponse(res, { priorVisits: [], totalPriorVisits: 0, otherTeamVisitsCount: 0 });
+    }
+
+    const key = computeCompanyKey(companyName, mobile);
+    const normName = (companyName || '').toLowerCase().trim();
+
+    const matchConditions = [];
+    if (key) matchConditions.push({ companyKey: key });
+    if (normName && normName.length >= 3) {
+      matchConditions.push({ 'customer.companyName': new RegExp(normName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') });
+    }
+    if (mobile) {
+      const digits = String(mobile).replace(/\D/g, '').slice(-10);
+      if (digits.length >= 8) {
+        matchConditions.push({ 'customer.mobile': new RegExp(digits) });
+      }
+    }
+
+    if (matchConditions.length === 0) {
+      return successResponse(res, { priorVisits: [], totalPriorVisits: 0, otherTeamVisitsCount: 0 });
+    }
+
+    const query = { $or: matchConditions };
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+      query.inquiryNumber = { $ne: excludeId };
+    }
+
+    const allMatches = await Inquiry.find(query).sort({ date: -1, createdAt: -1 });
+
+    const isAdmin = ['admin', 'super_admin', 'manager'].includes(req.user.role);
+
+    const accessibleVisits = [];
+    let otherTeamVisitsCount = 0;
+
+    allMatches.forEach((inq) => {
+      const isOwn = (
+        (inq.createdBy?.userId && String(inq.createdBy.userId) === String(req.user.id)) ||
+        (inq.createdBy?.email && inq.createdBy.email.toLowerCase() === req.user.email.toLowerCase())
+      );
+
+      if (isAdmin || isOwn) {
+        accessibleVisits.push({
+          id: inq._id,
+          inquiryNumber: inq.inquiryNumber,
+          date: inq.date,
+          salesPerson: inq.salesPerson || inq.createdBy?.name || 'Sales Representative',
+          opportunity: inq.visit?.opportunity || 'HOT',
+          visitType: inq.visit?.visitType || 'Site Visit',
+          nextAction: inq.followUp?.nextAction || [],
+          followUpDate: inq.followUp?.followUpDate || '',
+          isOwn: isOwn
+        });
+      } else {
+        otherTeamVisitsCount++;
+      }
+    });
+
+    return successResponse(res, {
+      priorVisits: accessibleVisits,
+      totalPriorVisits: allMatches.length,
+      otherTeamVisitsCount: otherTeamVisitsCount,
+      mostRecent: allMatches.length > 0 ? {
+        date: allMatches[0].date,
+        salesPerson: allMatches[0].salesPerson || allMatches[0].createdBy?.name || 'Sales Representative',
+        opportunity: allMatches[0].visit?.opportunity || 'HOT'
+      } : null
     });
   } catch (error) {
     next(error);

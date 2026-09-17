@@ -127,6 +127,10 @@ export default function ReviewSummary({ formData, onEditStep }) {
   return (
     <div className="review-container">
       {sections.map((sec, idx) => {
+        if (formData.hasProductRequirement === false && (sec.step === 3 || sec.step === 4)) {
+          return null;
+        }
+
         const validFields = sec.fields.filter(
           (f) => f.value !== undefined && f.value !== null && String(f.value).trim().length > 0
         );

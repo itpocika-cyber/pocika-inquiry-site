@@ -64,7 +64,8 @@ export const getInitialInquiryData = () => ({
     nextActionCommitment: ''
   },
   remarks: '',
-  photos: []
+  photos: [],
+  hasProductRequirement: true
 });
 
 export const useInquiryFormStore = create((set, get) => ({
@@ -263,11 +264,13 @@ export const useInquiryFormStore = create((set, get) => ({
     }
 
     if (stepNumber === 3) {
-      if (!formData.products || formData.products.length === 0) {
-        errors['products'] = 'Please select at least one product.';
-      }
-      if (formData.products?.includes('Other') && !formData.productOther?.trim()) {
-        errors['productOther'] = 'Please specify Products.';
+      if (formData.hasProductRequirement !== false) {
+        if (!formData.products || formData.products.length === 0) {
+          errors['products'] = 'Please select at least one product.';
+        }
+        if (formData.products?.includes('Other') && !formData.productOther?.trim()) {
+          errors['productOther'] = 'Please specify Products.';
+        }
       }
     }
 
@@ -282,7 +285,9 @@ export const useInquiryFormStore = create((set, get) => ({
         errors['followUp.quotationDate'] = 'Quotation Required By date is required.';
       }
       if (!formData.followUp.followUpDate) {
-        errors['followUp.followUpDate'] = 'Next Follow-up Date is required.';
+        errors['followUp.followUpDate'] = formData.visit?.opportunity === 'FUTURE POTENTIAL'
+          ? 'Next Follow-up Date is required for Future Potential visits.'
+          : 'Next Follow-up Date is required.';
       }
     }
 
@@ -297,6 +302,10 @@ export const useInquiryFormStore = create((set, get) => ({
   },
 
   goToStep: (step) => {
+    const { formData } = get();
+    if (formData.hasProductRequirement === false && (step === 3 || step === 4)) {
+      return;
+    }
     if (step >= 1 && step <= 8) {
       set({ currentStep: step });
       get().saveDraftDebounced();
@@ -304,11 +313,18 @@ export const useInquiryFormStore = create((set, get) => ({
   },
 
   nextStep: () => {
-    const { currentStep, totalSteps, validateStep } = get();
+    const { currentStep, totalSteps, formData, validateStep } = get();
     if (!validateStep(currentStep)) return false;
 
-    if (currentStep < totalSteps) {
-      set({ currentStep: currentStep + 1 });
+    let targetStep = currentStep + 1;
+    if (currentStep === 2 && formData.hasProductRequirement === false) {
+      targetStep = 5;
+    } else if ((currentStep === 3 || currentStep === 4) && formData.hasProductRequirement === false) {
+      targetStep = 5;
+    }
+
+    if (targetStep <= totalSteps) {
+      set({ currentStep: targetStep });
       get().saveDraftDebounced();
       return true;
     }
@@ -316,9 +332,13 @@ export const useInquiryFormStore = create((set, get) => ({
   },
 
   prevStep: () => {
-    const { currentStep } = get();
-    if (currentStep > 1) {
-      set({ currentStep: currentStep - 1 });
+    const { currentStep, formData } = get();
+    let targetStep = currentStep - 1;
+    if (currentStep === 5 && formData.hasProductRequirement === false) {
+      targetStep = 2;
+    }
+    if (targetStep >= 1) {
+      set({ currentStep: targetStep });
       get().saveDraftDebounced();
     }
   },
@@ -389,9 +409,10 @@ export const useInquiryFormStore = create((set, get) => ({
     set({ isSubmitting: true, submissionError: null });
 
     try {
-      // 1. Create Inquiry
+      // 1. Create Inquiry (omit UI-only flow keys like hasProductRequirement)
+      const { hasProductRequirement, ...cleanData } = formData;
       const payload = {
-        ...formData,
+        ...cleanData,
         photos: [] // initial empty photos array, uploaded next
       };
 

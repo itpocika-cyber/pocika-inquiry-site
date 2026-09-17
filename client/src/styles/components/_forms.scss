@@ -98,9 +98,13 @@ textarea.form-control-pocika {
   @include touch-target;
   @include focus-ring;
   cursor: pointer;
-  padding: $space-2 $space-4;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  padding: 8px 16px;
+  min-height: 44px;
   border-radius: $radius-md;
-  border: 1px solid $color-border;
+  border: 1.5px solid $color-border;
   background-color: $color-white;
   color: $color-text;
   font-size: $font-size-sm;
@@ -114,12 +118,25 @@ textarea.form-control-pocika {
 
   &:hover {
     border-color: $color-primary;
+    background-color: #fafbfc;
   }
 
-  &.is-selected {
-    background-color: $color-primary-soft;
-    border-color: $color-primary;
-    color: $color-primary-dark;
+  &.is-selected,
+  &:has(input:checked) {
+    background-color: #e8f2fc;
+    border: 2px solid $color-primary;
+    color: #0b3d91;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(11, 61, 145, 0.15);
+
+    &::before {
+      content: '✓';
+      display: inline-block;
+      font-weight: 900;
+      font-size: 0.85rem;
+      color: $color-primary;
+      margin-right: 2px;
+    }
   }
 }
 

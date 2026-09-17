@@ -9,6 +9,7 @@ import InquiryForm from './pages/InquiryForm';
 import InquiryDetails from './pages/InquiryDetails';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageTeam from './pages/ManageTeam';
+import SalesMemberDetail from './pages/SalesMemberDetail';
 import Success from './pages/Success';
 import DesignSystem from './pages/DesignSystem';
 import { useAuthStore } from './store/authStore';
@@ -103,6 +104,15 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <ManageTeam />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/team/:userId"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'manager']}>
+              <SalesMemberDetail />
             </ProtectedRoute>
           }
         />

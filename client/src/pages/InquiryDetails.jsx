@@ -33,6 +33,10 @@ export default function InquiryDetails() {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
+  // Company Visit History State
+  const [companyHistory, setCompanyHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   const fetchDetails = async () => {
     setLoading(true);
     try {
@@ -58,6 +62,35 @@ export default function InquiryDetails() {
   useEffect(() => {
     fetchDetails();
   }, [id]);
+
+  // Load other visits to the same company
+  useEffect(() => {
+    if (!inquiry?.customer?.companyName) return;
+
+    const fetchHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        const params = new URLSearchParams({
+          companyName: inquiry.customer.companyName,
+          excludeId: inquiry._id || inquiry.inquiryNumber
+        });
+        if (inquiry.customer.mobile) {
+          params.append('mobile', inquiry.customer.mobile);
+        }
+
+        const res = await api.get(`/inquiries/company-history?${params.toString()}`);
+        if (res.data?.inquiries) {
+          setCompanyHistory(res.data.inquiries);
+        }
+      } catch (err) {
+        console.warn('Failed to load company history:', err.message);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [inquiry?._id, inquiry?.customer?.companyName]);
 
   const handlePdf = async (isDownload = false) => {
     setPdfGenerating(true);
@@ -486,6 +519,57 @@ export default function InquiryDetails() {
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* Other Visits to This Company Card */}
+            <div className="card-pocika p-4 mb-4">
+              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h2 className="text-field-label m-0" style={{ fontSize: '1.1rem' }}>
+                  Other Visits to This Company
+                </h2>
+                {companyHistory.length > 0 && (
+                  <span className="badge bg-light text-primary border small">
+                    {companyHistory.length}
+                  </span>
+                )}
+              </div>
+
+              {loadingHistory ? (
+                <div className="text-muted small py-2">Loading previous visits...</div>
+              ) : companyHistory.length === 0 ? (
+                <div className="text-muted small py-2">
+                  No other recorded visits for this company.
+                </div>
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  {companyHistory.map((hInq) => (
+                    <div key={hInq._id || hInq.inquiryNumber} className="border-bottom pb-2">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Link
+                          to={`/inquiries/${hInq.inquiryNumber || hInq._id}`}
+                          className="fw-semibold text-primary text-decoration-none small"
+                        >
+                          {hInq.inquiryNumber}
+                        </Link>
+                        <span
+                          className={`badge-pocika ${getOppBadge(hInq.visit?.opportunity)}`}
+                          style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                        >
+                          {hInq.visit?.opportunity || '-'}
+                        </span>
+                      </div>
+                      <div className="text-muted small">
+                        {formatDate(hInq.date)} · {hInq.salesPerson || 'Sales'}
+                      </div>
+                      {hInq.visit?.personMet && (
+                        <div className="text-helper small text-truncate mt-1">
+                          Met: {hInq.visit.personMet}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

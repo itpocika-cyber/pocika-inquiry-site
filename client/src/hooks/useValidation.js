@@ -48,10 +48,12 @@ export function useValidation() {
       }
 
       case 3: {
-        if (!data.products || data.products.length === 0) {
-          errors['products'] = 'Please select at least one product requirement.';
-        } else if (data.products.includes('Other') && !data.productOther?.trim()) {
-          errors['productOther'] = 'Please specify the other product required.';
+        if (data.hasProductRequirement !== false) {
+          if (!data.products || data.products.length === 0) {
+            errors['products'] = 'Please select at least one product requirement.';
+          } else if (data.products.includes('Other') && !data.productOther?.trim()) {
+            errors['productOther'] = 'Please specify the other product required.';
+          }
         }
         break;
       }
@@ -76,7 +78,9 @@ export function useValidation() {
 
       case 6: {
         if (!data.followUp.followUpDate) {
-          errors['followUp.followUpDate'] = 'Next Follow-up Date is required.';
+          errors['followUp.followUpDate'] = data.visit?.opportunity === 'FUTURE POTENTIAL'
+            ? 'Next Follow-up Date is required for Future Potential visits.'
+            : 'Next Follow-up Date is required.';
         }
         if (data.followUp.nextAction?.includes('Quotation') && !data.followUp.quotationDate) {
           errors['followUp.quotationDate'] = 'Quotation Required By date is required when Quotation is selected.';

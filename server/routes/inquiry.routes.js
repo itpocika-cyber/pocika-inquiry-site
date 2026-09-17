@@ -5,7 +5,8 @@ import {
   getInquiryById,
   updateInquiry,
   getSummary,
-  downloadInquiryPdf
+  downloadInquiryPdf,
+  getCompanyHistory
 } from '../controllers/inquiry.controller.js';
 import {
   uploadMiddleware,
@@ -20,6 +21,7 @@ const router = express.Router();
 
 // All inquiry endpoints require authentication
 router.get('/summary', authenticateUser, getSummary);
+router.get('/company-history', authenticateUser, getCompanyHistory);
 router.post('/', authenticateUser, validateInquiry, createInquiry);
 router.get('/', authenticateUser, getInquiries);
 router.get('/:id', authenticateUser, getInquiryById);

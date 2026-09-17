@@ -8,6 +8,7 @@ import ReviewSummary from '../components/ReviewSummary';
 import DiscardModal from '../components/DiscardModal';
 import { useInquiryFormStore } from '../store/inquiryFormStore';
 import { useAuthStore } from '../store/authStore';
+import api from '../api/client';
 
 export default function InquiryForm() {
   const navigate = useNavigate();
@@ -36,12 +37,45 @@ export default function InquiryForm() {
 
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
+  // Company History Tracking State
+  const [historyMatches, setHistoryMatches] = useState([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyDismissed, setHistoryDismissed] = useState(false);
+
   useEffect(() => {
     initDraft();
     if (user && !formData.salesPerson) {
       setField('salesPerson', user.displayName || user.email);
     }
   }, [user]);
+
+  // Debounced Company History Check (500ms)
+  useEffect(() => {
+    const compName = formData.customer?.companyName?.trim();
+    const mobile = formData.customer?.mobile?.trim();
+
+    if (!compName || compName.length < 3) {
+      setHistoryMatches([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ companyName: compName });
+        if (mobile) params.append('mobile', mobile);
+        const res = await api.get(`/inquiries/company-history?${params.toString()}`);
+        if (res.data?.inquiries && Array.isArray(res.data.inquiries)) {
+          setHistoryMatches(res.data.inquiries);
+        } else {
+          setHistoryMatches([]);
+        }
+      } catch (err) {
+        console.warn('Company history lookup error:', err.message);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.customer?.companyName, formData.customer?.mobile]);
 
   const handleNext = async () => {
     if (currentStep < totalSteps) {
@@ -138,6 +172,7 @@ export default function InquiryForm() {
           <Stepper
             currentStep={currentStep}
             totalSteps={totalSteps}
+            hasProductRequirement={formData.hasProductRequirement !== false}
             onStepClick={(step) => goToStep(step)}
           />
 
@@ -145,7 +180,52 @@ export default function InquiryForm() {
             {/* STEP 1: Contact */}
             {currentStep === 1 && (
               <section className="form-step-panel card-pocika p-4">
-                <h2 className="text-section-title mb-4">Visit & Contact</h2>
+                <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                  <h2 className="text-section-title m-0">Visit & Contact</h2>
+                  {historyMatches.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn-pocika btn-pocika-ghost btn-sm text-primary"
+                      onClick={() => setShowHistoryModal(true)}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-1">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {historyMatches.length} Previous Visit{historyMatches.length > 1 ? 's' : ''}
+                    </button>
+                  )}
+                </div>
+
+                {/* Company History Alert Banner */}
+                {historyMatches.length > 0 && !historyDismissed && (
+                  <div className="alert-pocika alert-info mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
+                    <div className="d-flex align-items-center gap-2">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                      <span>
+                        We found <strong>{historyMatches.length}</strong> previous visit{historyMatches.length > 1 ? 's' : ''} to this company.
+                      </span>
+                      <button
+                        type="button"
+                        className="btn-pocika btn-pocika-ghost btn-sm text-primary py-0 px-2 fw-bold text-decoration-underline"
+                        onClick={() => setShowHistoryModal(true)}
+                      >
+                        View History
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-close ms-auto"
+                      style={{ fontSize: '0.75rem' }}
+                      onClick={() => setHistoryDismissed(true)}
+                      title="Dismiss"
+                    />
+                  </div>
+                )}
                 <div className="row g-3">
                   <div className="col-md-6">
                     <div className="field-group">
@@ -324,7 +404,10 @@ export default function InquiryForm() {
                       'Consultant',
                       'Retail/Other'
                     ].map((type) => (
-                      <label key={type} className="chip-option">
+                      <label
+                        key={type}
+                        className={`chip-option ${formData.business?.customerType === type ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="customerType"
@@ -397,7 +480,10 @@ export default function InquiryForm() {
                   </label>
                   <div className="chip-group" role="radiogroup">
                     {['Factory', 'Warehouse', 'Office', 'Commercial Site', 'Other'].map((f) => (
-                      <label key={f} className="chip-option">
+                      <label
+                        key={f}
+                        className={`chip-option ${formData.business?.facility === f ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="facility"
@@ -469,7 +555,10 @@ export default function InquiryForm() {
                   </label>
                   <div className="chip-group" role="radiogroup">
                     {['New', 'Under Construction', 'Existing', 'Expansion/Modification'].map((st) => (
-                      <label key={st} className="chip-option">
+                      <label
+                        key={st}
+                        className={`chip-option ${formData.business?.status === st ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="facilityStatus"
@@ -487,7 +576,7 @@ export default function InquiryForm() {
                   )}
                 </div>
 
-                <div className="field-group">
+                <div className="field-group mb-4">
                   <label className="field-label">Expected Requirement Date</label>
                   <input
                     className="form-control-pocika"
@@ -496,12 +585,57 @@ export default function InquiryForm() {
                     onChange={(e) => setField('business.expectedDate', e.target.value)}
                   />
                 </div>
+
+                {/* Gating Question: Product Requirement */}
+                <div className="field-group p-3 rounded-3 border" style={{ backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
+                  <label className="field-label mb-2 fw-bold" style={{ color: 'var(--color-navy)', fontSize: '0.95rem' }}>
+                    Did this visit result in a specific product requirement?<span className="required-mark">*</span>
+                  </label>
+                  <p className="text-muted small mb-3">
+                    Select <strong>No</strong> for introductory or cold visits without a specific product scope. Steps 3 (Products) & 4 (Commercials) will be skipped automatically.
+                  </p>
+                  <div className="chip-group" role="radiogroup">
+                    <label className={`chip-option ${formData.hasProductRequirement !== false ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="hasProductRequirement"
+                        checked={formData.hasProductRequirement !== false}
+                        onChange={() => setField('hasProductRequirement', true)}
+                      />
+                      Yes — Specific product requirement discussed
+                    </label>
+                    <label className={`chip-option ${formData.hasProductRequirement === false ? 'is-selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="hasProductRequirement"
+                        checked={formData.hasProductRequirement === false}
+                        onChange={() => setField('hasProductRequirement', false)}
+                      />
+                      No — General visit / Future potential only
+                    </label>
+                  </div>
+                </div>
               </section>
             )}
 
             {/* STEP 3: Product / Requirement */}
             {currentStep === 3 && (
               <section className="form-step-panel card-pocika p-4">
+                <div className="d-flex justify-content-between align-items-center mb-3 p-2 px-3 rounded-2 border" style={{ backgroundColor: '#f0f7ff', borderColor: '#b9d5f3' }}>
+                  <span className="small text-primary fw-medium">
+                    Specific product requirement: <strong>Yes</strong>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-pocika btn-pocika-ghost btn-sm text-secondary py-1"
+                    onClick={() => {
+                      setField('hasProductRequirement', false);
+                      goToStep(5);
+                    }}
+                  >
+                    Skip to Opportunity &rarr;
+                  </button>
+                </div>
                 <h2 className="text-section-title mb-4">Product / Requirement</h2>
 
                 <div className="field-group mb-4">
@@ -610,7 +744,10 @@ export default function InquiryForm() {
                       'Compliance/Audit',
                       'Price Comparison'
                     ].map((r) => (
-                      <label key={r} className="chip-option">
+                      <label
+                        key={r}
+                        className={`chip-option ${formData.requirement?.reason === r ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="reason"
@@ -663,7 +800,10 @@ export default function InquiryForm() {
                   <label className="field-label mb-2">Budget</label>
                   <div className="chip-group">
                     {['Available', 'Not Available', 'To Be Discussed'].map((b) => (
-                      <label key={b} className="chip-option">
+                      <label
+                        key={b}
+                        className={`chip-option ${formData.commercial?.budget === b ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="budget"
@@ -731,7 +871,10 @@ export default function InquiryForm() {
                   <label className="field-label mb-2">Decision Maker / Influencer</label>
                   <div className="chip-group">
                     {['Decision Maker', 'Influencer'].map((role) => (
-                      <label key={role} className="chip-option">
+                      <label
+                        key={role}
+                        className={`chip-option ${formData.commercial?.decisionRole === role ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="decisionRole"
@@ -767,7 +910,10 @@ export default function InquiryForm() {
                   </label>
                   <div className="chip-group" role="radiogroup">
                     {['Cold Visit', 'Lead Visit', 'Reference', 'Follow-up', 'Existing Customer'].map((vt) => (
-                      <label key={vt} className="chip-option">
+                      <label
+                        key={vt}
+                        className={`chip-option ${formData.visit?.visitType === vt ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="visitType"
@@ -813,7 +959,10 @@ export default function InquiryForm() {
                   </label>
                   <div className="chip-group" role="radiogroup">
                     {['Taken', 'Not Required'].map((pOpt) => (
-                      <label key={pOpt} className="chip-option">
+                      <label
+                        key={pOpt}
+                        className={`chip-option ${formData.visit?.photos === pOpt ? 'is-selected' : ''}`}
+                      >
                         <input
                           type="radio"
                           name="photos"
@@ -843,28 +992,36 @@ export default function InquiryForm() {
                       { val: 'FUTURE POTENTIAL', cls: 'badge-future-potential' },
                       { val: 'DEALER DEVELOPMENT', cls: 'badge-dealer-development' },
                       { val: 'NO REQUIREMENT', cls: 'badge-no-requirement' }
-                    ].map(({ val, cls }) => (
-                      <label
-                        key={val}
-                        className={`badge-pocika ${cls}`}
-                        style={{
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          border: formData.visit?.opportunity === val ? '2px solid currentColor' : 'none'
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="opportunity"
-                          checked={formData.visit?.opportunity === val}
-                          onChange={() => setField('visit.opportunity', val)}
-                          style={{ margin: 0 }}
-                        />
-                        {val}
-                      </label>
-                    ))}
+                    ].map(({ val, cls }) => {
+                      const isSelected = formData.visit?.opportunity === val;
+                      return (
+                        <label
+                          key={val}
+                          className={`badge-pocika ${cls} ${isSelected ? 'is-selected' : ''}`}
+                          style={{
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '8px 14px',
+                            fontWeight: isSelected ? '700' : '500',
+                            border: isSelected ? '2px solid currentColor' : '1px solid transparent',
+                            boxShadow: isSelected ? '0 0 0 2px rgba(11,61,145,0.3)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="opportunity"
+                            checked={isSelected}
+                            onChange={() => setField('visit.opportunity', val)}
+                            style={{ margin: 0 }}
+                          />
+                          {isSelected && <span>✓</span>}
+                          {val}
+                        </label>
+                      );
+                    })}
                   </div>
                   {validationErrors['visit.opportunity'] && (
                     <span className="field-error is-visible mt-2">
@@ -889,16 +1046,22 @@ export default function InquiryForm() {
                       'Sample',
                       'Technical Discussion',
                       'Management Meeting'
-                    ].map((action) => (
-                      <label key={action} className="chip-option">
-                        <input
-                          type="checkbox"
-                          checked={formData.followUp?.nextAction?.includes(action)}
-                          onChange={() => toggleArrayItem('followUp.nextAction', action)}
-                        />
-                        {action}
-                      </label>
-                    ))}
+                    ].map((action) => {
+                      const isSelected = formData.followUp?.nextAction?.includes(action);
+                      return (
+                        <label
+                          key={action}
+                          className={`chip-option ${isSelected ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleArrayItem('followUp.nextAction', action)}
+                          />
+                          {action}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -925,17 +1088,23 @@ export default function InquiryForm() {
                 <div className="field-group mb-3">
                   <label className="field-label mb-2">Next visit / action type</label>
                   <div className="chip-group" role="radiogroup">
-                    {['Site Visit', 'Follow-up', 'Dealer Meeting', 'Other'].map((vt) => (
-                      <label key={vt} className="chip-option">
-                        <input
-                          type="radio"
-                          name="nextVisitType"
-                          checked={formData.followUp?.nextVisitType === vt}
-                          onChange={() => setField('followUp.nextVisitType', vt)}
-                        />
-                        {vt}
-                      </label>
-                    ))}
+                    {['Site Visit', 'Follow-up', 'Dealer Meeting', 'Other'].map((vt) => {
+                      const isSelected = formData.followUp?.nextVisitType === vt;
+                      return (
+                        <label
+                          key={vt}
+                          className={`chip-option ${isSelected ? 'is-selected' : ''}`}
+                        >
+                          <input
+                            type="radio"
+                            name="nextVisitType"
+                            checked={isSelected}
+                            onChange={() => setField('followUp.nextVisitType', vt)}
+                          />
+                          {vt}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1086,6 +1255,82 @@ export default function InquiryForm() {
         onClose={() => setShowDiscardModal(false)}
         onConfirm={handleDiscardConfirm}
       />
+
+      {/* Company History Modal */}
+      {showHistoryModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content" style={{ borderRadius: 'var(--radius-lg)' }}>
+              <div className="modal-header border-bottom">
+                <div>
+                  <h3 className="modal-title fs-5 fw-bold mb-1">Previous Visits to Company</h3>
+                  <p className="text-muted small mb-0">
+                    Found {historyMatches.length} existing record{historyMatches.length > 1 ? 's' : ''} for "{formData.customer?.companyName}"
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowHistoryModal(false)}
+                />
+              </div>
+              <div className="modal-body p-0">
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Inquiry No.</th>
+                        <th>Date</th>
+                        <th>Salesperson</th>
+                        <th>Opportunity</th>
+                        <th>Person Met / Scope</th>
+                        <th className="text-end">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyMatches.map((inq) => (
+                        <tr key={inq._id || inq.inquiryNumber}>
+                          <td className="fw-semibold">{inq.inquiryNumber}</td>
+                          <td className="small">{inq.date || '-'}</td>
+                          <td className="small">{inq.salesPerson || '-'}</td>
+                          <td>
+                            <span className="badge bg-light text-dark border small">
+                              {inq.visit?.opportunity || '-'}
+                            </span>
+                          </td>
+                          <td className="small text-truncate" style={{ maxWidth: '200px' }}>
+                            {inq.visit?.personMet ? `${inq.visit.personMet}: ` : ''}
+                            {inq.visit?.requirementDiscussed || inq.remarks || '-'}
+                          </td>
+                          <td className="text-end">
+                            <a
+                              href={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-pocika btn-pocika-ghost btn-sm"
+                            >
+                              View Details &nearr;
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer border-top">
+                <button
+                  type="button"
+                  className="btn-pocika btn-pocika-secondary btn-sm"
+                  onClick={() => setShowHistoryModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

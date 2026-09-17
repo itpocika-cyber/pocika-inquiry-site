@@ -18,6 +18,7 @@
   color: $color-text-muted;
   padding: $space-2 0;
   border-bottom: 2px solid transparent;
+  text-decoration: none;
 
   &:hover {
     color: $color-navy;
@@ -27,6 +28,7 @@
   &.is-active {
     color: $color-navy;
     border-bottom-color: $color-primary;
+    font-weight: $font-weight-semibold;
   }
 }
 
@@ -36,43 +38,136 @@
   background: none;
   border: none;
   padding: $space-2;
-
-  @include up($bp-lg) {
-    display: none;
-  }
-}
-
-.mobile-nav-panel {
-  display: none;
-  flex-direction: column;
-  gap: $space-1;
-  padding: $space-3 $space-4 $space-5;
-  border-top: 1px solid $color-border;
-  background-color: $color-white;
-
-  &.is-open { display: flex; }
+  color: $color-navy;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 
   @include up($bp-lg) {
     display: none !important;
   }
 }
 
+/* Mobile Drawer Backdrop */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 31, 51, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1040;
+  animation: fadeIn 0.2s ease forwards;
+
+  @include up($bp-lg) {
+    display: none !important;
+  }
+}
+
+/* Slide-in Mobile Drawer */
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  background-color: $color-white;
+  z-index: 1050;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+
+  &.is-open {
+    transform: translateX(0);
+  }
+
+  @include up($bp-lg) {
+    display: none !important;
+  }
+}
+
+.mobile-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-4;
+  border-bottom: 1px solid $color-border;
+  background-color: #F8FAFC;
+}
+
+.mobile-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: $color-text-muted;
+  cursor: pointer;
+  padding: $space-2;
+  border-radius: $radius-sm;
+
+  &:hover {
+    color: $color-navy;
+    background-color: #E2E8F0;
+  }
+}
+
+.mobile-drawer-user {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-4;
+  border-bottom: 1px solid $color-border;
+  background-color: #FFFFFF;
+}
+
+.mobile-drawer-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-drawer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  padding: $space-3 $space-3;
+}
+
 .mobile-nav-link {
   @include touch-target;
   @include focus-ring;
-  padding: $space-3;
-  border-radius: $radius-sm;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
   color: $color-text;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: background-color $transition-fast, color $transition-fast;
 
   &:hover {
     background-color: $color-bg;
+    color: $color-navy;
     text-decoration: none;
   }
 
   &.is-active {
     color: $color-primary;
     background-color: $color-primary-soft;
+    font-weight: $font-weight-semibold;
   }
+}
+
+.mobile-drawer-footer {
+  padding: $space-4;
+  border-top: 1px solid $color-border;
+  background-color: #F8FAFC;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

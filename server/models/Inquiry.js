@@ -105,6 +105,8 @@ const inquirySchema = new mongoose.Schema({
     remarks: { type: String, default: '' }
   },
 
+  companyKey: { type: String, index: true, default: '' },
+
   createdBy: {
     userId: { type: String, default: '', index: true },
     firebaseUid: { type: String, default: '', index: true },
@@ -113,6 +115,21 @@ const inquirySchema = new mongoose.Schema({
   }
 }, {
   timestamps: true // adds createdAt, updatedAt
+});
+
+export const computeCompanyKey = (companyName, mobile) => {
+  const normName = (companyName || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  const digits = (mobile || '').replace(/\D/g, '').slice(-10);
+  if (!normName) return '';
+  return digits ? `${normName}_${digits}` : normName;
+};
+
+// Auto-compute companyKey on save
+inquirySchema.pre('save', function(next) {
+  if (this.customer?.companyName) {
+    this.companyKey = computeCompanyKey(this.customer.companyName, this.customer.mobile);
+  }
+  next();
 });
 
 // Indexes for common dashboard queries

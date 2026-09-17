@@ -10,7 +10,8 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const [summary, setSummary] = useState({ total: 0, today: 0, hot: 0, pendingFollowUps: 0 });
   const [recentInquiries, setRecentInquiries] = useState([]);
-  const [upcomingFollowUps, setUpcomingFollowUps] = useState([]);
+  const [allFollowUps, setAllFollowUps] = useState([]);
+  const [followUpFilter, setFollowUpFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [hasDraft, setHasDraft] = useState(false);
 
@@ -22,23 +23,20 @@ export default function Dashboard() {
     const loadDashboard = async () => {
       setLoading(true);
       try {
-        const [sumRes, inqRes] = await Promise.all([
+        const [sumRes, inqRes, fuRes] = await Promise.all([
           api.get('/inquiries/summary'),
-          api.get('/inquiries?limit=20')
+          api.get('/inquiries?limit=10'),
+          api.get('/inquiries?hasFollowUp=true&sortBy=nextFollowUpDate&limit=50')
         ]);
 
         if (sumRes.data) setSummary(sumRes.data);
-
-        const items = inqRes.data?.items || [];
-        setRecentInquiries(items.slice(0, 5));
-
-        // Filter upcoming follow-ups
-        const today = new Date().toISOString().split('T')[0];
-        const upcoming = items
-          .filter((inq) => inq.followUp?.followUpDate && inq.followUp.followUpDate >= today)
-          .sort((a, b) => (a.followUp.followUpDate > b.followUp.followUpDate ? 1 : -1))
-          .slice(0, 5);
-        setUpcomingFollowUps(upcoming);
+        if (inqRes.data?.items) setRecentInquiries(inqRes.data.items.slice(0, 5));
+        if (fuRes.data?.items) {
+          setAllFollowUps(fuRes.data.items);
+        } else if (inqRes.data?.items) {
+          // fallback if endpoint returns standard items
+          setAllFollowUps(inqRes.data.items.filter(x => x.followUp?.followUpDate));
+        }
       } catch (err) {
         console.warn('Dashboard load warning:', err.message);
       } finally {
@@ -74,6 +72,22 @@ export default function Dashboard() {
       return d;
     }
   };
+
+  const today = new Date().toISOString().split('T')[0];
+  const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+  const overdueFollowUps = allFollowUps.filter(
+    (x) => x.followUp?.followUpDate && x.followUp.followUpDate < today && x.status !== 'Won' && x.status !== 'Lost'
+  );
+  const todayFollowUps = allFollowUps.filter((x) => x.followUp?.followUpDate === today);
+  const weekFollowUps = allFollowUps.filter(
+    (x) => x.followUp?.followUpDate && x.followUp.followUpDate >= today && x.followUp.followUpDate <= weekAhead
+  );
+
+  let displayedFollowUps = allFollowUps;
+  if (followUpFilter === 'overdue') displayedFollowUps = overdueFollowUps;
+  else if (followUpFilter === 'today') displayedFollowUps = todayFollowUps;
+  else if (followUpFilter === 'this_week') displayedFollowUps = weekFollowUps;
 
   return (
     <div className="app-shell">
@@ -244,37 +258,108 @@ export default function Dashboard() {
           {/* Right: Upcoming Follow-ups Widget */}
           <div className="col-lg-4">
             <div className="card-pocika p-4">
-              <h2 className="text-field-label border-bottom pb-2 mb-3" style={{ fontSize: '1.1rem' }}>
-                Upcoming Follow-ups
-              </h2>
+              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h2 className="text-field-label m-0" style={{ fontSize: '1.1rem' }}>
+                  Follow-up Reminders
+                </h2>
+                <span className="badge bg-primary rounded-pill small">
+                  {allFollowUps.length}
+                </span>
+              </div>
 
-              {upcomingFollowUps.length === 0 ? (
+              {/* Filter Pills */}
+              <div className="d-flex flex-wrap gap-1 mb-3">
+                {[
+                  { key: 'all', label: 'All', count: allFollowUps.length },
+                  { key: 'overdue', label: 'Overdue', count: overdueFollowUps.length, badgeCls: 'bg-danger text-white' },
+                  { key: 'today', label: 'Today', count: todayFollowUps.length, badgeCls: 'bg-warning text-dark' },
+                  { key: 'this_week', label: '7 Days', count: weekFollowUps.length }
+                ].map((pill) => (
+                  <button
+                    key={pill.key}
+                    type="button"
+                    className={`btn btn-sm py-1 px-2 d-inline-flex align-items-center gap-1 ${
+                      followUpFilter === pill.key
+                        ? 'btn-primary'
+                        : 'btn-outline-secondary'
+                    }`}
+                    style={{ fontSize: '0.75rem', borderRadius: '14px' }}
+                    onClick={() => setFollowUpFilter(pill.key)}
+                  >
+                    <span>{pill.label}</span>
+                    {pill.count > 0 && (
+                      <span
+                        className={`badge ${
+                          followUpFilter === pill.key
+                            ? 'bg-white text-primary'
+                            : pill.badgeCls || 'bg-light text-secondary border'
+                        }`}
+                        style={{ fontSize: '0.7rem', padding: '1px 5px' }}
+                      >
+                        {pill.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {displayedFollowUps.length === 0 ? (
                 <div className="text-muted small py-3 text-center">
-                  No upcoming follow-ups scheduled.
+                  No {followUpFilter !== 'all' ? followUpFilter.replace('_', ' ') : ''} follow-ups scheduled.
                 </div>
               ) : (
                 <div className="d-flex flex-column gap-3">
-                  {upcomingFollowUps.map((inq) => (
-                    <div key={inq._id || inq.inquiryNumber} className="border-bottom pb-2">
-                      <div className="d-flex justify-content-between align-items-center mb-1">
-                        <span className="fw-semibold small text-truncate" style={{ maxWidth: '160px' }}>
-                          {inq.customer?.companyName}
-                        </span>
-                        <span className="badge bg-light text-dark small border">
-                          {formatDate(inq.followUp?.followUpDate)}
-                        </span>
+                  {displayedFollowUps.slice(0, 8).map((inq) => {
+                    const isOverdue = inq.followUp?.followUpDate && inq.followUp.followUpDate < today && inq.status !== 'Won' && inq.status !== 'Lost';
+                    const isToday = inq.followUp?.followUpDate === today;
+
+                    return (
+                      <div key={inq._id || inq.inquiryNumber} className="border-bottom pb-2">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <Link
+                            to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                            className="fw-semibold small text-primary text-decoration-none text-truncate"
+                            style={{ maxWidth: '160px' }}
+                          >
+                            {inq.customer?.companyName || inq.inquiryNumber}
+                          </Link>
+                          {isOverdue ? (
+                            <span className="badge bg-danger text-white small" style={{ fontSize: '0.7rem' }}>
+                              Overdue ({formatDate(inq.followUp?.followUpDate)})
+                            </span>
+                          ) : isToday ? (
+                            <span className="badge bg-warning text-dark small" style={{ fontSize: '0.7rem' }}>
+                              Today
+                            </span>
+                          ) : (
+                            <span className="badge bg-light text-dark small border" style={{ fontSize: '0.7rem' }}>
+                              {formatDate(inq.followUp?.followUpDate)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-muted small d-flex justify-content-between align-items-center">
+                          <span>
+                            Action: {Array.isArray(inq.followUp?.nextAction) ? inq.followUp.nextAction.join(', ') : inq.followUp?.nextAction || 'Follow-up'}
+                          </span>
+                          <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`} style={{ fontSize: '0.65rem', padding: '1px 5px' }}>
+                            {inq.visit?.opportunity || '-'}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mt-1">
+                          <span className="text-helper" style={{ fontSize: '0.75rem' }}>
+                            {inq.inquiryNumber}
+                          </span>
+                          <Link
+                            to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                            className="text-primary small text-decoration-none fw-medium"
+                            style={{ fontSize: '0.78rem' }}
+                          >
+                            View &rarr;
+                          </Link>
+                        </div>
                       </div>
-                      <div className="text-muted small">
-                        Action: {Array.isArray(inq.followUp?.nextAction) ? inq.followUp.nextAction.join(', ') : inq.followUp?.nextAction || 'Visit'}
-                      </div>
-                      <Link
-                        to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                        className="text-primary small text-decoration-none mt-1 d-inline-block"
-                      >
-                        View &rarr;
-                      </Link>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
