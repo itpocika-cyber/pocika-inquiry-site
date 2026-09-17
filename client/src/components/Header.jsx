@@ -85,16 +85,6 @@ export default function Header() {
           </nav>
 
           <div className="app-header-actions">
-            {!isAdmin && (
-              <Link
-                to="/inquiry"
-                className="btn-pocika btn-pocika-primary btn-sm d-none d-sm-inline-flex align-items-center gap-1"
-                style={{ textDecoration: 'none' }}
-              >
-                + New Inquiry
-              </Link>
-            )}
-
             {user && (
               <div className="dropdown position-relative">
                 <div
