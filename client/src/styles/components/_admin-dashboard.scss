@@ -6,27 +6,46 @@
 // Admin Layout
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background-color: var.$color-bg;
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(11, 31, 51, 0.5);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease forwards;
+  }
 
   &__sidebar {
     width: 260px;
+    height: 100vh;
     background-color: var.$color-white;
     border-right: 1px solid var.$color-border;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     transition: transform 0.3s ease;
+    scrollbar-width: thin;
 
     @media (max-width: 991.98px) {
       position: fixed;
       top: 0;
       left: 0;
       bottom: 0;
+      height: 100%;
       z-index: 1045; // Bootstrap offcanvas z-index
       transform: translateX(-100%);
       
-      &.show {
+      &.show,
+      &.is-open {
         transform: translateX(0);
       }
     }
@@ -34,9 +53,25 @@
 
   &__main {
     flex-grow: 1;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__header {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    background-color: var.$color-white;
+    border-bottom: 1px solid var.$color-border;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   }
 }
 

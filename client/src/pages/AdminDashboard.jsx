@@ -182,6 +182,15 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-layout">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="admin-layout__backdrop d-lg-none"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
       <nav className={`admin-layout__sidebar ${sidebarOpen ? 'is-open' : ''}`}>
         <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
@@ -245,7 +254,7 @@ export default function AdminDashboard() {
       {/* Main Content Area */}
       <main className="admin-layout__main">
         {/* Top Header */}
-        <header className="bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
+        <header className="admin-layout__header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
           <div className="d-flex align-items-center">
             <button
               className="btn btn-light d-lg-none me-3"
@@ -275,7 +284,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <div className="p-3 p-md-4 flex-grow-1 overflow-auto">
+        <div className="admin-layout__content p-3 p-md-4 flex-grow-1">
           {/* KPI Cards */}
           <div className="row g-3 mb-4">
             <div className="col-6 col-md-4 col-xl-2">
