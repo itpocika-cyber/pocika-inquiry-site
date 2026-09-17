@@ -30,7 +30,7 @@ const inquirySchema = new mongoose.Schema({
     expectedDate: { type: String, default: "" }
   },
   
-  products: { type: [String], required: true },
+  products: { type: [String], default: [] },
   productOther: { type: String, default: "" },
   
   requirement: {
@@ -125,11 +125,10 @@ export const computeCompanyKey = (companyName, mobile) => {
 };
 
 // Auto-compute companyKey on save
-inquirySchema.pre('save', function(next) {
+inquirySchema.pre('save', function() {
   if (this.customer?.companyName) {
     this.companyKey = computeCompanyKey(this.customer.companyName, this.customer.mobile);
   }
-  next();
 });
 
 // Indexes for common dashboard queries

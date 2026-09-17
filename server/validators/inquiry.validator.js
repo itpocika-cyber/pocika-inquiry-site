@@ -58,7 +58,7 @@ export const inquirySchema = z.object({
     if (!val) return [];
     if (Array.isArray(val)) return val;
     return [String(val)];
-  }, z.array(z.string()).min(1, 'At least one product is required')),
+  }, z.array(z.string()).optional().default([])),
   productOther: optionalTrimmedString,
   
   requirement: z.object({
