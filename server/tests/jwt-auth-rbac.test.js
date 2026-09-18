@@ -39,6 +39,13 @@ describe('Phase 4: JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => 
     } catch {}
   });
 
+  it('0. Health-check GET /api/health returns 200 with status ok (unauthenticated)', async () => {
+    const res = await fetch(`${baseUrl}/api/health`);
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(data.status, 'ok');
+  });
+
   it('1. Missing Authorization header returns 401 Unauthorized', async () => {
     const res = await fetch(`${baseUrl}/api/v1/auth/me`);
     const data = await res.json();

@@ -25,23 +25,32 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-// CORS Config - strict origin enforcement (no '*')
-const allowedOrigins = [
-  config.clientOrigin,
+// CORS Config - origin enforcement (supporting comma-separated CLIENT_ORIGIN)
+const configuredOrigins = (config.clientOrigin || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const defaultLocalOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500'
-].filter(Boolean);
+];
+
+const allowedOrigins = Array.from(new Set([...configuredOrigins, ...defaultLocalOrigins]));
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Mobile / server-to-server / tests
+    if (!origin) return callback(null, true); // Mobile / server-to-server / tests / curl
+    const normalizedOrigin = origin.replace(/\/+$/, '');
     if (
-      origin.startsWith('http://localhost') ||
-      origin.startsWith('http://127.0.0.1') ||
-      origin.startsWith('http://[::1]') ||
-      allowedOrigins.includes(origin)
+      normalizedOrigin.startsWith('http://localhost') ||
+      normalizedOrigin.startsWith('http://127.0.0.1') ||
+      normalizedOrigin.startsWith('http://[::1]') ||
+      allowedOrigins.includes(normalizedOrigin)
     ) {
       return callback(null, true);
     }
@@ -62,7 +71,12 @@ app.use('/uploads', express.static(uploadsDir));
 // Request Logging
 app.use(requestLogger);
 
-// Health Endpoint
+// Unauthenticated Health Endpoint for hosting platforms (Render, load balancers)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Detailed Health Endpoint
 app.get('/api/v1/health', (req, res) => {
   const isDbConnected = mongoose.connection.readyState === 1;
   return successResponse(res, {

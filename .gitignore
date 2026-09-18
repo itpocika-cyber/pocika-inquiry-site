@@ -1,11 +1,28 @@
+# Dependencies
 node_modules/
+.npm/
+
+# Environment configurations
 .env
 .env.local
-.DS_Store
+.env.*.local
+*.env.local
+client/.env.local
+client/.env.*.local
+
+# Build outputs
 dist/
 build/
+client/dist/
+
+# OS & IDE metadata
+.DS_Store
 .vscode/
+
+# Local upload fallbacks
 server/uploads/photos/*
 !server/uploads/photos/.gitkeep
+
+# Development scratchpads
 scratch/
 debug-*.html

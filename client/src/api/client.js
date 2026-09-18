@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Resolve API base URL: Reads VITE_API_BASE_URL (for production on Vercel/staging),
+// with graceful fallback to relative '/api/v1' (for local Vite dev proxy).
+const rawBaseURL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+const baseURL = rawBaseURL
+  ? (rawBaseURL.endsWith('/api/v1') ? rawBaseURL : `${rawBaseURL}/api/v1`)
+  : '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   }
