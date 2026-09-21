@@ -48,6 +48,7 @@ app.use(cors({
     const normalizedOrigin = origin.replace(/\/+$/, '');
     if (
       allowedOrigins.includes('*') ||
+      normalizedOrigin.endsWith('.vercel.app') ||
       normalizedOrigin.startsWith('http://localhost') ||
       normalizedOrigin.startsWith('http://127.0.0.1') ||
       normalizedOrigin.startsWith('http://[::1]') ||
