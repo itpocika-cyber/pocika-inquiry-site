@@ -47,6 +47,7 @@ app.use(cors({
     if (!origin) return callback(null, true); // Mobile / server-to-server / tests / curl
     const normalizedOrigin = origin.replace(/\/+$/, '');
     if (
+      allowedOrigins.includes('*') ||
       normalizedOrigin.startsWith('http://localhost') ||
       normalizedOrigin.startsWith('http://127.0.0.1') ||
       normalizedOrigin.startsWith('http://[::1]') ||
