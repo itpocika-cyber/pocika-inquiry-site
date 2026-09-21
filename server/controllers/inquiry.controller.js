@@ -445,10 +445,12 @@ export const downloadInquiryPdf = async (req, res, next) => {
     // 3. Generate PDF Buffer (with resilient printable HTML fallback)
     try {
       const pdfBuffer = await generateInquiryPdf(inquiryObj);
+      const isDownload = req.query.download === 'true' || req.query.download === '1';
+      const disposition = isDownload ? 'attachment' : 'inline';
       const safeFilename = `POCIKA-Inquiry-${inquiryObj.inquiryNumber || 'Document'}.pdf`;
       res.set({
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${safeFilename}"`,
+        'Content-Disposition': `${disposition}; filename="${safeFilename}"`,
         'Content-Length': pdfBuffer.length,
         // Prevent caching of PDFs containing sensitive PII
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

@@ -11,37 +11,34 @@ const JWT_SECRET = config.jwtSecret;
  */
 export const authenticateUser = async (req, res, next) => {
   const authHeader = req.headers.authorization;
+  const queryToken = req.query?.token;
 
-  // Reject missing Authorization header
-  if (!authHeader) {
+  let token = null;
+
+  if (authHeader) {
+    // Reject malformed Authorization header
+    if (!authHeader.startsWith('Bearer ') || authHeader.split(' ').length !== 2) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[Auth Debug] Malformed Authorization header on ${req.method} ${req.originalUrl}`);
+      }
+      return errorResponse(res, {
+        code: 'INVALID_TOKEN_FORMAT',
+        message: 'Authentication required. Invalid token format.'
+      }, 401);
+    }
+    token = authHeader.split('Bearer ')[1]?.trim();
+  } else if (queryToken) {
+    token = String(queryToken).trim();
+  }
+
+  // Reject missing Authorization token
+  if (!token) {
     if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[Auth Debug] Missing Authorization header on ${req.method} ${req.originalUrl}`);
+      console.warn(`[Auth Debug] Missing Authorization token on ${req.method} ${req.originalUrl}`);
     }
     return errorResponse(res, {
       code: 'UNAUTHORIZED',
       message: 'Authentication required.'
-    }, 401);
-  }
-
-  // Reject malformed Authorization header
-  if (!authHeader.startsWith('Bearer ') || authHeader.split(' ').length !== 2) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[Auth Debug] Malformed Authorization header on ${req.method} ${req.originalUrl}`);
-    }
-    return errorResponse(res, {
-      code: 'INVALID_TOKEN_FORMAT',
-      message: 'Authentication required. Invalid token format.'
-    }, 401);
-  }
-
-  const token = authHeader.split('Bearer ')[1].trim();
-  if (!token) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[Auth Debug] Empty token on ${req.method} ${req.originalUrl}`);
-    }
-    return errorResponse(res, {
-      code: 'EMPTY_TOKEN',
-      message: 'Authentication required. Token is empty.'
     }, 401);
   }
 

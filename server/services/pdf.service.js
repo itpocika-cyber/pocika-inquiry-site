@@ -390,9 +390,10 @@ export const generateInquiryPdf = async (inquiry) => {
     const page = await browser.newPage();
     
     await page.setContent(finalHtml, { 
-      waitUntil: inquiry.photos && inquiry.photos.length > 0 ? 'networkidle2' : 'domcontentloaded', 
-      timeout: 25000 
+      waitUntil: 'load', 
+      timeout: 15000 
     });
+    await page.evaluateHandle('document.fonts.ready');
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
