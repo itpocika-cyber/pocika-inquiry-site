@@ -95,22 +95,35 @@ export default function InquiryDetails() {
   const handlePdf = async (isDownload = false) => {
     setPdfGenerating(true);
     try {
-      const blob = await api.get(`/inquiries/${id}/pdf`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const res = await api.get(`/inquiries/${id}/pdf`, { responseType: 'blob' });
+      
+      // If error returned as JSON inside blob
+      if (res instanceof Blob && res.type?.includes('application/json')) {
+        const errText = await res.text();
+        const errJson = JSON.parse(errText);
+        throw new Error(errJson.error?.message || errJson.message || 'PDF generation failed');
+      }
 
-      if (isDownload) {
+      const mimeType = res.type || 'application/pdf';
+      const isHtml = mimeType.includes('text/html');
+      const blob = new Blob([res], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+
+      if (isDownload && !isHtml) {
         const a = document.createElement('a');
         a.href = url;
         a.download = `POCIKA-Inquiry-${inquiry?.inquiryNumber || id}.pdf`;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        }, 100);
       } else {
         window.open(url, '_blank');
       }
     } catch (err) {
-      alert(`PDF generation failed: ${err.message}`);
+      alert(`PDF action failed: ${err.message}`);
     } finally {
       setPdfGenerating(false);
     }

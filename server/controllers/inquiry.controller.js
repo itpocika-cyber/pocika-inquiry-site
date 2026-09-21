@@ -2,7 +2,7 @@ import { Inquiry, computeCompanyKey } from '../models/Inquiry.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
 import { generateOptimizedUrls } from '../config/cloudinary.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
-import { generateInquiryPdf } from '../services/pdf.service.js';
+import { generateInquiryPdf, generateInquiryHtml } from '../services/pdf.service.js';
 
 export const createInquiry = async (req, res, next) => {
   try {
@@ -442,24 +442,29 @@ export const downloadInquiryPdf = async (req, res, next) => {
       }));
     }
 
-    // 3. Generate PDF Buffer
-    const pdfBuffer = await generateInquiryPdf(inquiryObj);
-
-    // 4. Send Response
-    const safeFilename = `POCIKA-Inquiry-${inquiryObj.inquiryNumber || 'Document'}.pdf`;
-    
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${safeFilename}"`,
-      'Content-Length': pdfBuffer.length,
-      // Prevent caching of PDFs containing sensitive PII
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-
-    res.send(pdfBuffer);
-    
+    // 3. Generate PDF Buffer (with resilient printable HTML fallback)
+    try {
+      const pdfBuffer = await generateInquiryPdf(inquiryObj);
+      const safeFilename = `POCIKA-Inquiry-${inquiryObj.inquiryNumber || 'Document'}.pdf`;
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${safeFilename}"`,
+        'Content-Length': pdfBuffer.length,
+        // Prevent caching of PDFs containing sensitive PII
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      return res.send(pdfBuffer);
+    } catch (pdfError) {
+      console.warn('Direct PDF binary generation encountered an issue, serving resilient printable HTML fallback:', pdfError.message);
+      const htmlContent = await generateInquiryHtml(inquiryObj);
+      res.set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      return res.send(htmlContent);
+    }
   } catch (error) {
     next(error);
   }

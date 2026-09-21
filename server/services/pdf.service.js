@@ -121,11 +121,8 @@ async function getLogoDataUri() {
   return '';
 }
 
-export const generateInquiryPdf = async (inquiry) => {
-  let browser = null;
-  
-  try {
-    // 1. Load Template
+export const generateInquiryHtml = async (inquiry) => {
+  // 1. Load Template
     const templatePath = path.join(__dirname, '../templates/inquiry-pdf.html');
     let templateHtml = await fs.readFile(templatePath, 'utf-8');
 
@@ -368,11 +365,26 @@ export const generateInquiryPdf = async (inquiry) => {
     for (const [key, val] of Object.entries(replacements)) {
       finalHtml = finalHtml.replaceAll(new RegExp(`{{${key}}}`, 'g'), val);
     }
+    return finalHtml;
+};
 
-    // 11. Launch Puppeteer & Generate PDF
+export const generateInquiryPdf = async (inquiry) => {
+  let browser = null;
+  try {
+    const finalHtml = await generateInquiryHtml(inquiry);
+
+    // 11. Launch Puppeteer & Generate PDF with full container sandbox arguments
     browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process'
+      ]
     });
 
     const page = await browser.newPage();

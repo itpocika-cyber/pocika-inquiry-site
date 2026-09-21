@@ -9,6 +9,7 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "seed:auth": "node scripts/seed-auth.js",
+    "postinstall": "puppeteer browsers install chrome",
     "test": "node --test tests/jwt-auth-rbac.test.js tests/cloudinary-media.test.js"
   },
   "engines": {
