@@ -72,9 +72,11 @@ const inquirySchema = new mongoose.Schema({
   remarks: { type: String, default: "" },
   
   photos: [{
-    photoId: { type: String, required: true },
-    publicId: { type: String, required: true },
-    secureUrl: { type: String, required: true },
+    photoId: { type: String, default: () => crypto.randomUUID() },
+    publicId: { type: String, default: '' },
+    secureUrl: { type: String, default: '' },
+    url: { type: String, default: '' },
+    caption: { type: String, default: '' },
     resourceType: { type: String, default: 'image' },
     format: { type: String, default: 'jpg' },
     width: { type: Number, default: 0 },
@@ -83,11 +85,11 @@ const inquirySchema = new mongoose.Schema({
     originalFileName: { type: String, default: '' },
     fileName: { type: String, default: '' }, // backwards compatibility
     previewUrl: { type: String, default: '' }, // backwards compatibility
-    sizeKB: { type: Number, default: 0 }, // backwards compatibility
+    sizeKB: { type: Number, default: 0 },
     uploadedBy: {
       userId: { type: String, default: '' },
       firebaseUid: { type: String, default: '' },
-      email: { type: String, required: true }
+      email: { type: String, default: '' }
     },
     uploadedAt: { type: Date, default: Date.now },
     sortOrder: { type: Number, default: 0 }

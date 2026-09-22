@@ -459,13 +459,11 @@ export const downloadInquiryPdf = async (req, res, next) => {
       });
       return res.send(pdfBuffer);
     } catch (pdfError) {
-      console.warn('Direct PDF binary generation encountered an issue, serving resilient printable HTML fallback:', pdfError.message);
-      const htmlContent = await generateInquiryHtml(inquiryObj);
-      res.set({
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
-      });
-      return res.send(htmlContent);
+      console.error('Direct PDF binary generation error:', pdfError);
+      return errorResponse(res, {
+        code: 'PDF_GENERATION_FAILED',
+        message: `Failed to generate inquiry PDF: ${pdfError.message}`
+      }, 500);
     }
   } catch (error) {
     next(error);

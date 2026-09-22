@@ -76,8 +76,14 @@ export default function PhotoUploader({
 
       {error && <div className="field-error is-visible mt-2">{error}</div>}
 
-      <div className="photo-upload-counter mt-3 mb-2">
-        {photos.length} of {maxPhotos} photos added
+      <div className="photo-upload-counter mt-3 mb-2 d-flex justify-content-between align-items-center">
+        <span>{photos.length} of {maxPhotos} photos added</span>
+        {photos.some(p => p.isUploading) && (
+          <span className="text-primary small fw-semibold d-inline-flex align-items-center gap-1">
+            <span className="spinner-border spinner-border-sm" role="status" style={{ width: '0.8rem', height: '0.8rem' }} />
+            Uploading to secure storage...
+          </span>
+        )}
       </div>
 
       {photos.length > 0 && (
@@ -89,20 +95,30 @@ export default function PhotoUploader({
                 : `${photo.sizeKB} KB`;
 
             return (
-              <div key={idx} className="photo-thumb">
+              <div key={photo.photoId || idx} className="photo-thumb position-relative">
                 <img
-                  src={photo.previewUrl || photo.secureUrl}
-                  alt={photo.fileName || `Photo ${idx + 1}`}
+                  src={photo.secureUrl || photo.url || photo.previewUrl}
+                  alt={photo.caption || photo.fileName || `Photo ${idx + 1}`}
                   onError={(e) => {
                     e.target.style.padding = '10px';
                     e.target.style.objectFit = 'contain';
                   }}
                 />
+                {photo.isUploading && (
+                  <div
+                    className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center"
+                    style={{ background: 'rgba(15, 23, 42, 0.65)', color: '#fff', zIndex: 2 }}
+                  >
+                    <div className="spinner-border spinner-border-sm text-light mb-1" role="status" />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Uploading</span>
+                  </div>
+                )}
                 <span className="photo-thumb-size">{sizeText}</span>
                 <button
                   type="button"
                   className="photo-thumb-remove"
                   aria-label="Remove photo"
+                  disabled={photo.isUploading}
                   onClick={(e) => {
                     e.stopPropagation();
                     onRemovePhoto(idx);

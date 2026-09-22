@@ -20,24 +20,36 @@ export default function Success() {
     }
   }, []);
 
-  const handlePdf = (isDownload = false) => {
+  const handlePdf = async (isDownload = false) => {
     if (!submittedInquiry?.inquiryNumber && !submittedInquiry?._id) return;
     const targetId = submittedInquiry.inquiryNumber || submittedInquiry._id;
-    const token = localStorage.getItem('pocika_token') || '';
-    const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
-    const apiBase = rawBase ? (rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`) : '/api/v1';
-    const downloadParam = isDownload ? '&download=true' : '';
-    const pdfUrl = `${apiBase}/inquiries/${targetId}/pdf?token=${encodeURIComponent(token)}${downloadParam}`;
 
-    if (isDownload) {
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `POCIKA-Inquiry-${submittedInquiry.inquiryNumber || 'Document'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } else {
-      window.open(pdfUrl, '_blank');
+    setPdfGenerating(true);
+    try {
+      const downloadParam = isDownload ? '?download=true' : '';
+      const response = await api.get(`/inquiries/${targetId}/pdf${downloadParam}`, {
+        responseType: 'blob'
+      });
+
+      const blob = response instanceof Blob ? response : new Blob([response], { type: 'application/pdf' });
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      if (isDownload) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `POCIKA-Inquiry-${submittedInquiry.inquiryNumber || 'Document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+      } else {
+        window.open(blobUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert(`Could not generate PDF: ${err.message || 'Please check server logs.'}`);
+    } finally {
+      setPdfGenerating(false);
     }
   };
 

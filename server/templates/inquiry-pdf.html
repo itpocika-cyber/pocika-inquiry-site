@@ -30,11 +30,6 @@
       break-inside: avoid;
     }
 
-    .page-2-start {
-      page-break-before: always;
-      break-before: page;
-    }
-
     .container {
       width: 100%;
       max-width: 100%;
@@ -279,61 +274,82 @@
     }
 
     /* Photos Section */
+    .photos-signatures-group {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      break-inside: avoid-page !important;
+    }
+    .photo-section-card {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      break-inside: avoid-page !important;
+      margin-bottom: 10px;
+    }
     .photos-grid {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
     .photo-card {
-      width: calc(50% - 4px);
       border: 1px solid #E2E8F0;
       border-radius: 4px;
       overflow: hidden;
       background: #ffffff;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      break-inside: avoid-page !important;
+      display: flex;
+      flex-direction: column;
     }
     .photo-img-wrap {
       width: 100%;
-      height: 125px;
+      height: 120px;
       background: #F8FAFC;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
+      overflow: hidden;
     }
     .photo-img-wrap img {
-      width: 100%;
-      height: 125px;
-      object-fit: cover;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
       display: block;
+      margin: auto;
     }
     .photo-tag {
       position: absolute;
       top: 4px;
       left: 4px;
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.85);
       color: #FFFFFF;
       font-size: 6.5pt;
       font-weight: 600;
       padding: 1px 5px;
       border-radius: 3px;
+      z-index: 2;
     }
     .photo-caption {
-      padding: 3px 6px;
-      font-size: 7pt;
+      padding: 4px 6px;
+      font-size: 6.8pt;
       color: #475569;
       font-weight: 500;
       background: #ffffff;
       border-top: 1px solid #F1F5F9;
       word-break: break-word;
+      text-align: center;
+      line-height: 1.2;
     }
 
     /* Signatures Section */
     .signatures-block {
-      margin-top: 12px;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      margin-top: 10px;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      break-inside: avoid-page !important;
     }
     .sig-grid {
       display: flex;
@@ -364,9 +380,7 @@
 <body>
   <div class="container">
     
-    <!-- ================= PAGE 1 ================= -->
-    
-    <!-- HEADER (PAGE 1) -->
+    <!-- HEADER -->
     <header class="doc-header">
       <div class="header-top">
         <div class="brand-left">
@@ -384,261 +398,27 @@
       <div class="header-divider"></div>
     </header>
 
-    <!-- 1. CUSTOMER / BUSINESS DETAILS -->
-    <div class="section-card">
-      <div class="section-card-header">
-        <span>1. Customer &amp; Business Details</span>
-        <span style="font-weight: 600; color: #475569; font-size: 7.5pt;">{{CUSTOMER_TYPE_HEADER}}</span>
-      </div>
-      <div class="section-card-body">
-        <div class="field-grid">
-          
-          <div class="field-col-12">
-            <div class="f-label">Company / Client Name</div>
-            <div class="f-val f-val-company">{{COMPANY_NAME}}</div>
-          </div>
+    <!-- DYNAMICALLY RENUMBERED SECTIONS (FILLED ONLY) -->
+    {{SECTIONS_CONTENT}}
 
-          <div class="field-col-6">
-            <div class="f-label">Contact Person</div>
-            <div class="f-val f-val-bold">{{CONTACT_PERSON}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Designation</div>
-            <div class="f-val">{{DESIGNATION}}</div>
-          </div>
+    <!-- SITE PHOTOS & SIGNATURES WRAPPER (PREVENTS AWKWARD BREAKS) -->
+    <div class="photos-signatures-group">
+      <!-- SITE PHOTOS -->
+      {{PHOTOS_SECTION}}
 
-          <div class="field-col-6">
-            <div class="f-label">Mobile No.</div>
-            <div class="f-val f-val-bold">{{MOBILE}}</div>
+      <!-- SIGNATURES BLOCK -->
+      <div class="signatures-block no-break">
+        <div class="sig-grid">
+          <div class="sig-col">
+            <div class="sig-line"></div>
+            <div class="sig-title">Sales Representative</div>
+            <div class="sig-meta">Prepared by: <strong>{{SALES_PERSON}}</strong></div>
           </div>
-          <div class="field-col-6">
-            <div class="f-label">Email Address</div>
-            <div class="f-val">{{EMAIL}}</div>
+          <div class="sig-col">
+            <div class="sig-line"></div>
+            <div class="sig-title">Manager / Sales Head Review</div>
+            <div class="sig-meta">Review Status: <strong>{{MANAGER_STATUS}}</strong> {{MANAGER_REVIEW_EXTRA}}</div>
           </div>
-
-          <div class="field-col-6">
-            <div class="f-label">Company / Billing Address</div>
-            <div class="f-val">{{BILLING_ADDRESS}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Site / Visit Location</div>
-            <div class="f-val">{{SITE_LOCATION}}</div>
-          </div>
-
-          <div class="field-col-6">
-            <div class="f-label">GST No.</div>
-            <div class="f-val">{{GST_NO}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Customer Type</div>
-            <div class="f-val">{{CUSTOMER_TYPE}}</div>
-          </div>
-
-          <div class="field-col-6">
-            <div class="f-label">Industry / Business Type</div>
-            <div class="f-val">{{INDUSTRY_TYPE}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Facility Type</div>
-            <div class="f-val">{{FACILITY}}</div>
-          </div>
-
-          <div class="field-col-4">
-            <div class="f-label">Location / GIDC</div>
-            <div class="f-val">{{LOCATION_GIDC}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Site Status</div>
-            <div class="f-val">{{STATUS}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Approx. Area / Floors</div>
-            <div class="f-val">{{AREA_FLOORS}}</div>
-          </div>
-
-          {{OPTIONAL_EXPECTED_DATE_ROW}}
-
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. PRODUCT / REQUIREMENT DETAILS -->
-    <div class="section-card">
-      <div class="section-card-header">2. Product / Requirement Details</div>
-      <div class="section-card-body">
-        <div class="field-grid">
-          
-          <div class="field-col-12">
-            <div class="f-label">Products Selected</div>
-            <div class="product-badges-wrap">{{PRODUCT_BADGES}}</div>
-          </div>
-
-          <div class="field-col-12">
-            <div class="f-label">Required Product / Specification / Size</div>
-            <div class="f-box">{{PRODUCT_SPECIFICATION}}</div>
-          </div>
-
-          <div class="field-col-4">
-            <div class="f-label">Estimated Quantity</div>
-            <div class="f-val f-val-bold">{{ESTIMATED_QUANTITY}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Purchase Reason</div>
-            <div class="f-val">{{PURCHASE_REASON}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Current Brand Used</div>
-            <div class="f-val">{{CURRENT_BRAND_VAL}}</div>
-          </div>
-
-          <div class="field-col-12">
-            <div class="f-label">Current Purchase / Existing Setup</div>
-            <div class="f-box">{{CURRENT_PURCHASE}}</div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. COMMERCIAL / SALES QUALIFICATION -->
-    <div class="section-card">
-      <div class="section-card-header">3. Commercial / Sales Qualification</div>
-      <div class="section-card-body">
-        <div class="field-grid">
-          
-          <div class="field-col-6">
-            <div class="f-label">Approx. Requirement Value</div>
-            <div class="f-val f-val-currency">{{REQUIREMENT_VALUE}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Expected Order Value</div>
-            <div class="f-val f-val-currency">{{EXPECTED_VALUE}}</div>
-          </div>
-
-          <div class="field-col-6">
-            <div class="f-label">Budget Status</div>
-            <div class="f-val">{{BUDGET}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Payment Terms</div>
-            <div class="f-val">{{PAYMENT_TERMS_VAL}}</div>
-          </div>
-
-          <div class="field-col-6">
-            <div class="f-label">Decision Maker &amp; Role</div>
-            <div class="f-val">{{DECISION_MAKER_FULL}}</div>
-          </div>
-          <div class="field-col-6">
-            <div class="f-label">Purchase Decision Expected By</div>
-            <div class="f-val">{{PURCHASE_DECISION_BY}}</div>
-          </div>
-
-          {{OPTIONAL_COMPETITORS_ROW}}
-
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. VISIT & OPPORTUNITY STATUS -->
-    <div class="section-card">
-      <div class="section-card-header">4. Visit &amp; Opportunity Status</div>
-      <div class="section-card-body">
-        <div class="field-grid">
-          
-          <div class="field-col-4">
-            <div class="f-label">Visit Type</div>
-            <div class="f-val">{{VISIT_TYPE}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Person Met</div>
-            <div class="f-val">{{PERSON_MET}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Opportunity Rating</div>
-            <div>{{OPPORTUNITY_BADGE}}</div>
-          </div>
-
-          <div class="field-col-12">
-            <div class="f-label">Key Discussion &amp; Requirements Identified</div>
-            <div class="f-box">{{REQUIREMENT_DISCUSSED}}</div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ================= PAGE 2 ================= -->
-
-    <!-- HEADER (PAGE 2) -->
-    <header class="doc-header page-2-start">
-      <div class="header-top">
-        <div class="brand-left">
-          <img src="{{LOGO_DATA_URI}}" alt="POCIKA Logo" class="brand-logo-img" />
-          <div class="brand-info">
-            <h1 class="brand-name">POCIKA FIRE &amp; SAFETY PRODUCTS LLP</h1>
-            <p class="brand-sub">Inquiry &amp; Sales Visit Form</p>
-          </div>
-        </div>
-        <div class="header-right">
-          <div class="header-inquiry-badge">Inquiry No: <strong>{{INQUIRY_NUMBER}}</strong></div>
-          <div class="header-meta">Date: <strong>{{DATE}}</strong> &nbsp;|&nbsp; Sales Person: <strong>{{SALES_PERSON}}</strong></div>
-        </div>
-      </div>
-      <div class="header-divider"></div>
-    </header>
-
-    <!-- 5. NEXT ACTION / FOLLOW-UP -->
-    <div class="section-card">
-      <div class="section-card-header">5. Next Action &amp; Follow-up Plan</div>
-      <div class="section-card-body">
-        <div class="field-grid">
-          
-          <div class="field-col-12">
-            <div class="f-label">Requested Next Actions</div>
-            <div class="product-badges-wrap">{{NEXT_ACTION_BADGES}}</div>
-          </div>
-
-          <div class="field-col-4">
-            <div class="f-label">Quotation Required By</div>
-            <div class="f-val">{{QUOTATION_REQUIRED_BY}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Next Follow-up Date</div>
-            <div class="f-val f-val-bold" style="color: #0284c7;">{{FOLLOW_UP_DATE}}</div>
-          </div>
-          <div class="field-col-4">
-            <div class="f-label">Next Interaction Type</div>
-            <div class="f-val">{{NEXT_VISIT_TYPE}}</div>
-          </div>
-
-          <div class="field-col-12">
-            <div class="f-label">Next Action Commitment / Notes</div>
-            <div class="f-box">{{NEXT_ACTION_COMMITMENT}}</div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. VISIT REMARKS / SPECIAL REQUIREMENTS -->
-    {{REMARKS_SECTION}}
-
-    <!-- SITE PHOTOS -->
-    {{PHOTOS_SECTION}}
-
-    <!-- SIGNATURES BLOCK -->
-    <div class="signatures-block no-break">
-      <div class="sig-grid">
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-title">Sales Representative</div>
-          <div class="sig-meta">Prepared by: <strong>{{SALES_PERSON}}</strong></div>
-        </div>
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-title">Manager / Sales Head Review</div>
-          <div class="sig-meta">Review Status: <strong>{{MANAGER_STATUS}}</strong> {{MANAGER_REVIEW_EXTRA}}</div>
         </div>
       </div>
     </div>

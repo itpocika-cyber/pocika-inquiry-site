@@ -178,8 +178,8 @@ export default function ReviewSummary({ formData, onEditStep }) {
                   {sec.photos.map((photo, pIdx) => (
                     <div key={pIdx} className="photo-thumb">
                       <img
-                        src={photo.previewUrl || photo.secureUrl}
-                        alt={photo.fileName || `Photo ${pIdx + 1}`}
+                        src={photo.secureUrl || photo.url || photo.previewUrl}
+                        alt={photo.caption || photo.fileName || `Photo ${pIdx + 1}`}
                       />
                     </div>
                   ))}

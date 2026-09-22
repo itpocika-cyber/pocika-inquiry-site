@@ -92,24 +92,36 @@ export default function InquiryDetails() {
     fetchHistory();
   }, [inquiry?._id, inquiry?.customer?.companyName]);
 
-  const handlePdf = (isDownload = false) => {
-    const token = localStorage.getItem('pocika_token') || '';
-    const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
-    const apiBase = rawBase ? (rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`) : '/api/v1';
-    
+  const handlePdf = async (isDownload = false) => {
     const targetId = inquiry?.inquiryNumber || id;
-    const downloadParam = isDownload ? '&download=true' : '';
-    const pdfUrl = `${apiBase}/inquiries/${targetId}/pdf?token=${encodeURIComponent(token)}${downloadParam}`;
+    if (!targetId) return;
 
-    if (isDownload) {
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `POCIKA-Inquiry-${targetId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } else {
-      window.open(pdfUrl, '_blank');
+    setPdfGenerating(true);
+    try {
+      const downloadParam = isDownload ? '?download=true' : '';
+      const response = await api.get(`/inquiries/${targetId}/pdf${downloadParam}`, {
+        responseType: 'blob'
+      });
+
+      const blob = response instanceof Blob ? response : new Blob([response], { type: 'application/pdf' });
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      if (isDownload) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `POCIKA-Inquiry-${targetId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+      } else {
+        window.open(blobUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert(`Could not generate PDF: ${err.message || 'Please check server logs.'}`);
+    } finally {
+      setPdfGenerating(false);
     }
   };
 
@@ -686,8 +698,8 @@ export default function InquiryDetails() {
 
 function PhotoItem({ photo, idx, onSelect }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const imgUrl = photo.optimizedUrls?.thumbnail || photo.secureUrl || photo.previewUrl;
-  const displayName = photo.originalFileName || photo.fileName || `Site Photo ${idx + 1}`;
+  const imgUrl = photo.optimizedUrls?.thumbnail || photo.secureUrl || photo.url || photo.previewUrl;
+  const displayName = photo.caption || photo.originalFileName || photo.fileName || `Site Photo ${idx + 1}`;
 
   return (
     <div
@@ -727,8 +739,8 @@ function PhotoItem({ photo, idx, onSelect }) {
 
 function PhotoModal({ photo, onClose }) {
   const [failed, setFailed] = useState(false);
-  const fullUrl = photo.optimizedUrls?.full || photo.optimizedUrls?.preview || photo.secureUrl || photo.previewUrl;
-  const name = photo.originalFileName || photo.fileName || 'Site Photo';
+  const fullUrl = photo.optimizedUrls?.full || photo.optimizedUrls?.preview || photo.secureUrl || photo.url || photo.previewUrl;
+  const name = photo.caption || photo.originalFileName || photo.fileName || 'Site Photo';
 
   return (
     <div

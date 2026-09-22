@@ -1035,10 +1035,14 @@ export default function InquiryForm() {
             {/* STEP 6: Follow-up */}
             {currentStep === 6 && (
               <section className="form-step-panel card-pocika p-4">
-                <h2 className="text-section-title mb-4">Next Action / Follow-up</h2>
+                <h2 className="text-section-title mb-1">Next Steps & Follow-up</h2>
+                <p className="text-muted-custom small mb-4">
+                  Set clear next steps and commitments so this lead stays warm and on track.
+                </p>
 
                 <div className="field-group mb-3">
-                  <label className="field-label mb-2">Next action</label>
+                  <label className="field-label mb-1">What needs to happen next?</label>
+                  <div className="text-helper mb-2">Pick all actions you told the customer you would take</div>
                   <div className="chip-group">
                     {[
                       'Quotation',
@@ -1068,9 +1072,10 @@ export default function InquiryForm() {
                 {/* Conditional Quotation Required Date */}
                 {formData.followUp?.nextAction?.includes('Quotation') && (
                   <div className="field-group mb-3">
-                    <label className="field-label">
+                    <label className="field-label mb-1">
                       Quotation Required By<span className="required-mark">*</span>
                     </label>
+                    <div className="text-helper mb-2">When does the customer need this quote by?</div>
                     <input
                       className={`form-control-pocika ${validationErrors['followUp.quotationDate'] ? 'is-invalid' : ''}`}
                       type="date"
@@ -1086,7 +1091,8 @@ export default function InquiryForm() {
                 )}
 
                 <div className="field-group mb-3">
-                  <label className="field-label mb-2">Next visit / action type</label>
+                  <label className="field-label mb-1">How will you connect next?</label>
+                  <div className="text-helper mb-2">Select the planned interaction type for your next touchpoint</div>
                   <div className="chip-group" role="radiogroup">
                     {['Site Visit', 'Follow-up', 'Dealer Meeting', 'Other'].map((vt) => {
                       const isSelected = formData.followUp?.nextVisitType === vt;
@@ -1111,9 +1117,10 @@ export default function InquiryForm() {
                 <div className="row g-3 mb-3">
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label">
+                      <label className="field-label mb-1">
                         Next Follow-up Date<span className="required-mark">*</span>
                       </label>
+                      <div className="text-helper mb-2">When are you reaching back out to the customer?</div>
                       <input
                         className={`form-control-pocika ${validationErrors['followUp.followUpDate'] ? 'is-invalid' : ''}`}
                         type="date"
@@ -1130,13 +1137,14 @@ export default function InquiryForm() {
                 </div>
 
                 <div className="field-group">
-                  <label className="field-label">Next Action / Commitment</label>
+                  <label className="field-label mb-1">Next Action / Commitment</label>
+                  <div className="text-helper mb-2">What did you tell the customer you'd do next? Note any specific promises made.</div>
                   <textarea
                     className="form-control-pocika"
                     rows="2"
                     value={formData.followUp?.nextActionCommitment || ''}
                     onChange={(e) => setField('followUp.nextActionCommitment', e.target.value)}
-                    placeholder="Specific commitments made to the client"
+                    placeholder="e.g. Will share revised quotation by Friday, arrange live demo at their plant next week..."
                   />
                 </div>
               </section>
@@ -1145,16 +1153,20 @@ export default function InquiryForm() {
             {/* STEP 7: Remarks & Photos */}
             {currentStep === 7 && (
               <section className="form-step-panel card-pocika p-4">
-                <h2 className="text-section-title mb-4">Remarks & Photos</h2>
+                <h2 className="text-section-title mb-1">Remarks & Photos</h2>
+                <p className="text-muted-custom small mb-4">
+                  Add observations, client preferences, and attach site photos.
+                </p>
 
                 <div className="field-group mb-4">
-                  <label className="field-label">Visit Remarks / Special Requirements</label>
+                  <label className="field-label mb-1">Visit Remarks / Special Requirements</label>
+                  <div className="text-helper mb-2">Any special observations, client preferences, or key points from your site visit</div>
                   <textarea
                     className="form-control-pocika"
                     rows="3"
                     value={formData.remarks || ''}
                     onChange={(e) => setField('remarks', e.target.value)}
-                    placeholder="Any special notes or observations from the site visit..."
+                    placeholder="e.g. Client requested customized mounting brackets; decision expected right after board review..."
                   />
                 </div>
 

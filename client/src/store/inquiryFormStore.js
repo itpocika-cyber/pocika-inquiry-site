@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../api/client';
+import uploadApi from '../api/uploadApi';
 
 const DRAFT_KEY = 'pocika_inquiry_draft';
 
@@ -50,15 +51,15 @@ export const getInitialInquiryData = () => ({
     competitors: ''
   },
   visit: {
-    visitType: '',
+    visitType: 'Cold Visit',
     personMet: '',
     requirementDiscussed: '',
-    photos: '',
-    opportunity: ''
+    photos: 'Attached',
+    opportunity: 'HOT'
   },
   followUp: {
     nextAction: [],
-    nextVisitType: '',
+    nextVisitType: 'Follow-up',
     quotationDate: '',
     followUpDate: '',
     nextActionCommitment: ''
@@ -73,6 +74,7 @@ export const useInquiryFormStore = create((set, get) => ({
   totalSteps: 8,
   formData: getInitialInquiryData(),
   selectedPhotoFiles: [], // Array of File objects
+  isUploadingPhotos: false,
   validationErrors: {},
   isSubmitting: false,
   submissionError: null,
@@ -146,18 +148,18 @@ export const useInquiryFormStore = create((set, get) => ({
     get().saveDraftDebounced();
   },
 
-  addPhotoFiles: (files) => {
-    const { selectedPhotoFiles, formData } = get();
+  addPhotoFiles: async (files) => {
+    const { formData } = get();
     const maxPhotos = 5;
-    const maxBytes = 5 * 1024 * 1024; // 5 MB
+    const maxBytes = 10 * 1024 * 1024; // 10 MB per Phase 9 spec
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
-    const newFiles = [...selectedPhotoFiles];
-    const newPhotos = [...formData.photos];
+    const existingPhotos = [...(formData.photos || [])];
     let error = null;
 
+    const validFiles = [];
     for (const file of files) {
-      if (newFiles.length >= maxPhotos) {
+      if (existingPhotos.length + validFiles.length >= maxPhotos) {
         error = `Maximum ${maxPhotos} photos allowed.`;
         break;
       }
@@ -166,48 +168,104 @@ export const useInquiryFormStore = create((set, get) => ({
         break;
       }
       if (file.size > maxBytes) {
-        error = `${file.name}: Size exceeds 5MB limit.`;
+        error = `${file.name}: Size exceeds 10MB limit.`;
         break;
       }
-
-      newFiles.push(file);
-      newPhotos.push({
-        fileName: file.name,
-        previewUrl: URL.createObjectURL(file),
-        sizeKB: Math.round(file.size / 1024)
-      });
+      validFiles.push(file);
     }
-
-    set({
-      selectedPhotoFiles: newFiles,
-      formData: { ...formData, photos: newPhotos }
-    });
 
     if (error) {
       set({ validationErrors: { ...get().validationErrors, photos: error } });
-    } else {
-      const errs = { ...get().validationErrors };
-      delete errs.photos;
-      set({ validationErrors: errs });
     }
 
-    get().saveDraftDebounced();
+    if (validFiles.length === 0) return;
+
+    // Temporary optimistic items for immediate feedback
+    const tempPhotos = validFiles.map((file) => ({
+      photoId: 'temp-' + Math.random().toString(36).substring(2),
+      fileName: file.name,
+      originalFileName: file.name,
+      caption: file.name,
+      previewUrl: URL.createObjectURL(file),
+      sizeKB: Math.round(file.size / 1024),
+      isUploading: true
+    }));
+
+    set({
+      isUploadingPhotos: true,
+      formData: {
+        ...formData,
+        photos: [...existingPhotos, ...tempPhotos]
+      }
+    });
+
+    try {
+      const formDataUpload = new FormData();
+      validFiles.forEach((file) => formDataUpload.append('photos', file));
+
+      const res = await uploadApi.uploadDirect(formDataUpload);
+      const uploadedPhotos = res.data?.photos || (res.data?.secureUrl ? [res.data] : []);
+
+      // Filter out temp placeholders
+      const remainingPhotos = (get().formData.photos || []).filter((p) => !p.photoId?.startsWith('temp-'));
+      const permanentPhotos = uploadedPhotos.map((up) => ({
+        photoId: up.photoId || crypto.randomUUID(),
+        publicId: up.publicId || '',
+        secureUrl: up.secureUrl || up.url,
+        url: up.secureUrl || up.url,
+        caption: up.caption || up.fileName || up.originalFileName || '',
+        fileName: up.fileName || up.originalFileName || '',
+        originalFileName: up.originalFileName || up.fileName || '',
+        previewUrl: up.secureUrl || up.url,
+        sizeKB: up.sizeKB || 0,
+        uploadedAt: up.uploadedAt || new Date()
+      }));
+
+      // Revoke any temporary blob URLs
+      tempPhotos.forEach((tp) => {
+        if (tp.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(tp.previewUrl);
+      });
+
+      const updatedList = [...remainingPhotos, ...permanentPhotos];
+      set({
+        isUploadingPhotos: false,
+        formData: {
+          ...get().formData,
+          photos: updatedList
+        }
+      });
+      get().saveDraftDebounced();
+    } catch (uploadErr) {
+      console.error('Photo upload failed:', uploadErr);
+      const remainingPhotos = (get().formData.photos || []).filter((p) => !p.photoId?.startsWith('temp-'));
+      tempPhotos.forEach((tp) => {
+        if (tp.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(tp.previewUrl);
+      });
+      set({
+        isUploadingPhotos: false,
+        formData: {
+          ...get().formData,
+          photos: remainingPhotos
+        },
+        validationErrors: {
+          ...get().validationErrors,
+          photos: `Photo upload failed: ${uploadErr.message || 'Please check connection'}`
+        }
+      });
+    }
   },
 
   removePhoto: (index) => {
-    const { selectedPhotoFiles, formData } = get();
+    const { formData } = get();
     const photo = formData.photos[index];
     if (photo?.previewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(photo.previewUrl);
     }
 
-    const newFiles = [...selectedPhotoFiles];
     const newPhotos = [...formData.photos];
-    newFiles.splice(index, 1);
     newPhotos.splice(index, 1);
 
     set({
-      selectedPhotoFiles: newFiles,
       formData: { ...formData, photos: newPhotos }
     });
     get().saveDraftDebounced();
@@ -215,7 +273,7 @@ export const useInquiryFormStore = create((set, get) => ({
 
   clearPhotos: () => {
     const { formData } = get();
-    formData.photos.forEach(p => {
+    (formData.photos || []).forEach(p => {
       if (p.previewUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(p.previewUrl);
       }
@@ -352,7 +410,13 @@ export const useInquiryFormStore = create((set, get) => ({
         try {
           const { currentStep, formData } = get();
           const cleanPhotos = (formData.photos || []).map(p => ({
+            photoId: p.photoId,
+            publicId: p.publicId,
+            secureUrl: p.secureUrl,
+            url: p.url,
             fileName: p.fileName,
+            originalFileName: p.originalFileName,
+            previewUrl: p.secureUrl || p.url,
             sizeKB: p.sizeKB
           }));
 
@@ -405,37 +469,37 @@ export const useInquiryFormStore = create((set, get) => ({
   },
 
   submitInquiry: async () => {
-    const { formData, selectedPhotoFiles } = get();
+    const { formData } = get();
     set({ isSubmitting: true, submissionError: null });
 
     try {
-      // 1. Create Inquiry (omit UI-only flow keys like hasProductRequirement)
+      // 1. Prepare clean payload including durable photo records
       const { hasProductRequirement, ...cleanData } = formData;
+      const cleanPhotos = (formData.photos || []).map(p => ({
+        photoId: p.photoId || crypto.randomUUID(),
+        publicId: p.publicId || '',
+        secureUrl: p.secureUrl || p.url || p.previewUrl,
+        url: p.secureUrl || p.url || p.previewUrl,
+        caption: p.caption || p.fileName || p.originalFileName || '',
+        fileName: p.fileName || p.originalFileName || '',
+        originalFileName: p.originalFileName || p.fileName || '',
+        previewUrl: p.secureUrl || p.url || p.previewUrl,
+        sizeKB: p.sizeKB || 0,
+        uploadedAt: p.uploadedAt || new Date()
+      }));
+
       const payload = {
         ...cleanData,
-        photos: [] // initial empty photos array, uploaded next
+        photos: cleanPhotos
       };
 
       const res = await api.post('/inquiries', payload);
       const createdInquiry = res.data;
 
-      // 2. Upload Photos if any
-      if (selectedPhotoFiles.length > 0) {
-        const formDataUpload = new FormData();
-        selectedPhotoFiles.forEach(file => {
-          formDataUpload.append('photos', file);
-        });
-
-        try {
-          await api.post(`/inquiries/${createdInquiry._id || createdInquiry.inquiryNumber}/photos`, formDataUpload, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-        } catch (photoErr) {
-          console.warn('Photo upload warning:', photoErr.message);
-        }
+      // Ensure createdInquiry in sessionStorage reflects all saved photos
+      if (!createdInquiry.photos || createdInquiry.photos.length === 0) {
+        createdInquiry.photos = cleanPhotos;
       }
-
-      // Store submitted inquiry for success screen
       sessionStorage.setItem('pocika_submitted_inquiry', JSON.stringify(createdInquiry));
 
       // Clear draft
