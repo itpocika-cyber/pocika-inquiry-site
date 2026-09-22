@@ -7,8 +7,22 @@ export default function PhotoUploader({
   maxPhotos = 5,
   error
 }) {
-  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+
+  // Best-effort geolocation helper
+  const getCoordinates = () => {
+    return new Promise((resolve) => {
+      if (!navigator?.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 3500, maximumAge: 60000 }
+      );
+    });
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -28,51 +42,115 @@ export default function PhotoUploader({
     }
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onAddFiles(Array.from(e.target.files));
-      e.target.value = ''; // Reset input to allow selecting same file again
+  const handleCameraCapture = async (e) => {
+    const fileList = e.target.files;
+    if (fileList && fileList.length > 0) {
+      const files = Array.from(fileList);
+      e.target.value = '';
+      setFetchingLocation(true);
+      try {
+        const coords = await getCoordinates();
+        setFetchingLocation(false);
+        onAddFiles(files, coords);
+      } catch {
+        setFetchingLocation(false);
+        onAddFiles(files, null);
+      }
+    }
+  };
+
+  const handleGallerySelect = (e) => {
+    const fileList = e.target.files;
+    if (fileList && fileList.length > 0) {
+      const files = Array.from(fileList);
+      e.target.value = '';
+      onAddFiles(files);
     }
   };
 
   return (
     <div id="photo-uploader-widget">
+      {/* 2 Explicit Buttons for Mobile / Desktop */}
+      <div className="row g-2 mb-3">
+        <div className="col-12 col-sm-6">
+          <button
+            type="button"
+            className="btn btn-outline-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            style={{ borderRadius: '10px', fontSize: '0.95rem' }}
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={photos.length >= maxPhotos}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            <span>📷 Take Photo</span>
+          </button>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/jpeg, image/png, image/webp, image/jpg, .jpg, .jpeg, .png, .webp"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleCameraCapture}
+          />
+        </div>
+
+        <div className="col-12 col-sm-6">
+          <button
+            type="button"
+            className="btn btn-outline-secondary w-100 py-3 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            style={{ borderRadius: '10px', fontSize: '0.95rem' }}
+            onClick={() => galleryInputRef.current?.click()}
+            disabled={photos.length >= maxPhotos}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span>🖼️ Choose from Gallery</span>
+          </button>
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/jpeg, image/png, image/webp, image/jpg, .jpg, .jpeg, .png, .webp"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleGallerySelect}
+          />
+        </div>
+      </div>
+
+      {/* Drag & Drop Fallback Zone */}
       <div
         className="photo-upload"
         id="photo-drop-zone"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => galleryInputRef.current?.click()}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         style={{
           borderColor: isDragOver ? 'var(--color-primary)' : undefined,
           backgroundColor: isDragOver ? 'rgba(37, 99, 235, 0.05)' : undefined,
-          cursor: 'pointer'
+          cursor: 'pointer',
+          padding: '1.25rem'
         }}
       >
-        <svg
-          className="photo-upload-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        >
-          <path d="M4 7h3l2-2h6l2 2h3v13H4z" />
-          <circle cx="12" cy="13" r="3.5" />
-        </svg>
-        <div className="photo-upload-title">Tap to take a photo or choose from gallery</div>
-        <div className="photo-upload-helper">Up to {maxPhotos} photos · JPG, PNG, or WebP (max 5MB)</div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          id="photo-input"
-          accept="image/jpeg, image/png, image/webp"
-          multiple
-          capture="environment"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+        <div className="photo-upload-title" style={{ fontSize: '0.9rem' }}>
+          Or drag & drop site photos here
+        </div>
+        <div className="photo-upload-helper" style={{ fontSize: '0.8rem' }}>
+          Up to {maxPhotos} photos · JPG, PNG, or WebP (max 10MB each)
+        </div>
       </div>
+
+      {fetchingLocation && (
+        <div className="text-primary small mt-2 d-flex align-items-center gap-1">
+          <span className="spinner-border spinner-border-sm" role="status" style={{ width: '0.75rem', height: '0.75rem' }} />
+          <span>Recording GPS location for photo...</span>
+        </div>
+      )}
 
       {error && <div className="field-error is-visible mt-2">{error}</div>}
 
@@ -92,7 +170,7 @@ export default function PhotoUploader({
             const sizeText =
               photo.sizeKB > 1024
                 ? `${(photo.sizeKB / 1024).toFixed(1)} MB`
-                : `${photo.sizeKB} KB`;
+                : `${photo.sizeKB || 0} KB`;
 
             return (
               <div key={photo.photoId || idx} className="photo-thumb position-relative">
@@ -112,6 +190,15 @@ export default function PhotoUploader({
                     <div className="spinner-border spinner-border-sm text-light mb-1" role="status" />
                     <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Uploading</span>
                   </div>
+                )}
+                {photo.latitude && (
+                  <span
+                    className="position-absolute start-0 top-0 m-1 badge bg-dark bg-opacity-75 text-white"
+                    style={{ fontSize: '0.6rem', padding: '2px 4px' }}
+                    title={`GPS: ${photo.latitude}, ${photo.longitude}`}
+                  >
+                    📍 Location saved
+                  </span>
                 )}
                 <span className="photo-thumb-size">{sizeText}</span>
                 <button

@@ -4,16 +4,33 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import api from '../api/client';
+import { announcementApi } from '../api/announcementApi';
 import { useAuthStore } from '../store/authStore';
+import { isNewInquiry, markInquiryAsViewed } from '../utils/notificationTracker';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const [summary, setSummary] = useState({ total: 0, today: 0, hot: 0, pendingFollowUps: 0 });
+  const [summary, setSummary] = useState({
+    total: 0,
+    today: 0,
+    hot: 0,
+    pendingFollowUps: 0,
+    renewalsDueSoon: 0,
+    staleLeadsCount: 0
+  });
   const [recentInquiries, setRecentInquiries] = useState([]);
   const [allFollowUps, setAllFollowUps] = useState([]);
   const [followUpFilter, setFollowUpFilter] = useState('all');
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasDraft, setHasDraft] = useState(false);
+  const [viewedTick, setViewedTick] = useState(0);
+
+  useEffect(() => {
+    const handleViewedChange = () => setViewedTick((t) => t + 1);
+    window.addEventListener('pocika_viewed_changed', handleViewedChange);
+    return () => window.removeEventListener('pocika_viewed_changed', handleViewedChange);
+  }, []);
 
   useEffect(() => {
     // Check if draft exists
@@ -23,20 +40,28 @@ export default function Dashboard() {
     const loadDashboard = async () => {
       setLoading(true);
       try {
-        const [sumRes, inqRes, fuRes] = await Promise.all([
+        const [sumRes, inqRes, fuRes, annRes] = await Promise.all([
           api.get('/inquiries/summary'),
-          api.get('/inquiries?limit=10'),
-          api.get('/inquiries?hasFollowUp=true&sortBy=nextFollowUpDate&limit=50')
+          api.get('/inquiries?limit=25&sort=newest'),
+          api.get('/inquiries?hasFollowUp=true&sortBy=nextFollowUpDate&limit=100'),
+          announcementApi.getAnnouncements().catch(() => ({ data: [] }))
         ]);
 
         if (sumRes.data) setSummary(sumRes.data);
-        if (inqRes.data?.items) setRecentInquiries(inqRes.data.items.slice(0, 5));
+        if (inqRes.data?.items) {
+          // Dashboard shows only recent 5 inquiries
+          setRecentInquiries(inqRes.data.items.slice(0, 5));
+        }
         if (fuRes.data?.items) {
           setAllFollowUps(fuRes.data.items);
         } else if (inqRes.data?.items) {
-          // fallback if endpoint returns standard items
           setAllFollowUps(inqRes.data.items.filter(x => x.followUp?.followUpDate));
         }
+
+        // Filter out dismissed announcements
+        const dismissed = JSON.parse(localStorage.getItem('pocika_dismissed_announcements') || '[]');
+        const activeAnn = (annRes.data || []).filter(a => !dismissed.includes(a._id));
+        setAnnouncements(activeAnn);
       } catch (err) {
         console.warn('Dashboard load warning:', err.message);
       } finally {
@@ -46,6 +71,19 @@ export default function Dashboard() {
 
     loadDashboard();
   }, []);
+
+  const handleDismissAnnouncement = (annId) => {
+    try {
+      const dismissed = JSON.parse(localStorage.getItem('pocika_dismissed_announcements') || '[]');
+      if (!dismissed.includes(annId)) {
+        dismissed.push(annId);
+        localStorage.setItem('pocika_dismissed_announcements', JSON.stringify(dismissed));
+      }
+    } catch (e) {
+      console.warn('Dismiss save error:', e);
+    }
+    setAnnouncements(announcements.filter(a => a._id !== annId));
+  };
 
   const getOppBadge = (opp) => {
     switch (opp) {
@@ -77,7 +115,7 @@ export default function Dashboard() {
   const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
   const overdueFollowUps = allFollowUps.filter(
-    (x) => x.followUp?.followUpDate && x.followUp.followUpDate < today && x.status !== 'Won' && x.status !== 'Lost'
+    (x) => x.followUp?.followUpDate && x.followUp.followUpDate < today && x.followUp?.dealStatus !== 'Won' && x.followUp?.dealStatus !== 'Lost'
   );
   const todayFollowUps = allFollowUps.filter((x) => x.followUp?.followUpDate === today);
   const weekFollowUps = allFollowUps.filter(
@@ -94,6 +132,38 @@ export default function Dashboard() {
       <Header />
 
       <main className="container-app section-block">
+        {/* Team Announcements Banners */}
+        {announcements.map((ann) => (
+          <div
+            key={ann._id}
+            className={`alert mb-4 d-flex justify-content-between align-items-start border ${
+              ann.priority === 'urgent'
+                ? 'alert-danger border-danger'
+                : 'alert-warning border-warning'
+            }`}
+            style={{ borderRadius: '12px' }}
+          >
+            <div className="d-flex align-items-start gap-2">
+              <span style={{ fontSize: '1.25rem' }}>
+                {ann.priority === 'urgent' ? '🚨' : '📢'}
+              </span>
+              <div>
+                <strong className="d-block mb-1">{ann.title}</strong>
+                <p className="mb-0 small" style={{ whiteSpace: 'pre-wrap' }}>{ann.message}</p>
+                <div className="text-muted small mt-1" style={{ fontSize: '0.72rem' }}>
+                  Posted by {ann.createdBy?.name || 'Management'} · {formatDate(ann.createdAt)}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-close ms-2"
+              onClick={() => handleDismissAnnouncement(ann._id)}
+              title="Dismiss announcement"
+            />
+          </div>
+        ))}
+
         {/* Top greeting & Action */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
           <div>
@@ -101,11 +171,20 @@ export default function Dashboard() {
               Welcome back, {user?.displayName || 'Sales Executive'}
             </h1>
             <p className="text-muted-custom mb-0">
-              Here is an overview of your visits and open inquiries.
+              Here is an overview of your visits, reminders, and open inquiries.
             </p>
           </div>
-          <div>
-            <Link to="/inquiry" className="btn-pocika btn-pocika-primary d-inline-flex align-items-center gap-2">
+          <div className="d-flex gap-2">
+            <Link
+              to="/catalog"
+              className="btn-pocika btn-pocika-secondary d-inline-flex align-items-center gap-1"
+            >
+              <span>📖 Catalog</span>
+            </Link>
+            <Link
+              to="/inquiry"
+              className="btn-pocika btn-pocika-primary d-inline-flex align-items-center gap-2"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -131,7 +210,7 @@ export default function Dashboard() {
         <div className="row g-3 mb-4" id="kpi-container">
           <div className="col-6 col-md-3">
             <div className="card-pocika p-3 text-center">
-              <div className="text-helper mb-1">Total Inquiries</div>
+              <div className="text-helper small mb-1">Total Inquiries</div>
               <div className="fs-2 fw-bold" style={{ color: 'var(--color-navy)' }}>
                 {summary.total || 0}
               </div>
@@ -139,23 +218,23 @@ export default function Dashboard() {
           </div>
           <div className="col-6 col-md-3">
             <div className="card-pocika p-3 text-center">
-              <div className="text-helper mb-1">Today's Visits</div>
+              <div className="text-helper small mb-1">Today's Visits</div>
               <div className="fs-2 fw-bold" style={{ color: 'var(--color-primary)' }}>
                 {summary.today || 0}
               </div>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="card-pocika p-3 text-center">
-              <div className="text-helper mb-1">HOT Opps</div>
+            <div className="card-pocika p-3 text-center border-bottom border-3 border-danger">
+              <div className="text-helper small mb-1">HOT Opps</div>
               <div className="fs-2 fw-bold text-danger">
                 {summary.hot || 0}
               </div>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="card-pocika p-3 text-center">
-              <div className="text-helper mb-1">Pending Follow-ups</div>
+            <div className="card-pocika p-3 text-center border-bottom border-3 border-warning">
+              <div className="text-helper small mb-1">Pending Follow-ups</div>
               <div className="fs-2 fw-bold text-warning">
                 {summary.pendingFollowUps || 0}
               </div>
@@ -163,17 +242,81 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Actionable Reminders Bar: Renewals & Stale Leads */}
+        {(summary.renewalsDueSoon > 0 || summary.staleLeadsCount > 0) && (
+          <div className="row g-3 mb-4">
+            {summary.renewalsDueSoon > 0 && (
+              <div className="col-md-6">
+                <Link
+                  to="/inquiries?renewalsDueInDays=30"
+                  className="card-pocika p-3 d-flex justify-content-between align-items-center text-decoration-none text-dark border-primary"
+                  style={{ background: '#f0f7ff' }}
+                >
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fs-5">📅</span>
+                    <div>
+                      <span className="fw-bold" style={{ color: 'var(--color-navy)' }}>
+                        {summary.renewalsDueSoon} Renewal{summary.renewalsDueSoon > 1 ? 's' : ''} Due in 30 Days
+                      </span>
+                      <div className="text-muted small">Contracts & AMC expiring soon</div>
+                    </div>
+                  </div>
+                  <span className="btn btn-sm btn-outline-primary py-1 px-2" style={{ fontSize: '0.75rem' }}>
+                    View List &rarr;
+                  </span>
+                </Link>
+              </div>
+            )}
+            {summary.staleLeadsCount > 0 && (
+              <div className="col-md-6">
+                <Link
+                  to="/inquiries?isStale=true"
+                  className="card-pocika p-3 d-flex justify-content-between align-items-center text-decoration-none text-dark border-danger"
+                  style={{ background: '#fff5f5' }}
+                >
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fs-5">⚠️</span>
+                    <div>
+                      <span className="fw-bold text-danger">
+                        {summary.staleLeadsCount} Lead{summary.staleLeadsCount > 1 ? 's' : ''} Need Attention
+                      </span>
+                      <div className="text-muted small">Overdue follow-ups without recent visits</div>
+                    </div>
+                  </div>
+                  <span className="btn btn-sm btn-outline-danger py-1 px-2" style={{ fontSize: '0.75rem' }}>
+                    Follow up &rarr;
+                  </span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Main 2-column layout */}
         <div className="row g-4">
           {/* Left: Recent Inquiries */}
           <div className="col-lg-8">
             <div className="card-pocika p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2 className="text-field-label m-0" style={{ fontSize: '1.1rem' }}>
-                  Recent Inquiries
-                </h2>
-                <Link to="/inquiries" className="btn-pocika btn-pocika-ghost btn-sm">
-                  View All &rarr;
+                <div className="d-flex align-items-center gap-2">
+                  <h2 className="text-field-label m-0" style={{ fontSize: '1.1rem' }}>
+                    Recent Inquiries
+                  </h2>
+                  {recentInquiries.filter(isNewInquiry).length > 0 ? (
+                    <span
+                      className="badge bg-danger text-white rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1"
+                      title="New inquiries waiting to be reviewed/viewed"
+                    >
+                      <span>🔔</span> {recentInquiries.filter(isNewInquiry).length} New
+                    </span>
+                  ) : (
+                    <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                      ✓ All Viewed
+                    </span>
+                  )}
+                </div>
+                <Link to="/inquiries" className="btn-pocika btn-pocika-ghost btn-sm" title="View complete searchable list of all inquiries">
+                  View All Inquiries ({summary.total || recentInquiries.length}) &rarr;
                 </Link>
               </div>
 
@@ -188,7 +331,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop Table */}
+                  {/* Desktop Table View */}
                   <div className="d-none d-md-block table-responsive">
                     <table className="table table-hover align-middle mb-0">
                       <thead className="table-light">
@@ -196,59 +339,139 @@ export default function Dashboard() {
                           <th>Inquiry No.</th>
                           <th>Date</th>
                           <th>Company / Client</th>
+                          <th>Salesperson</th>
                           <th>Opportunity</th>
+                          <th>Deal Status</th>
+                          <th>Next Follow-up</th>
                           <th className="text-end">Action</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {recentInquiries.map((inq) => (
-                          <tr key={inq._id || inq.inquiryNumber}>
-                            <td className="fw-medium">{inq.inquiryNumber || '-'}</td>
-                            <td>{formatDate(inq.date)}</td>
-                            <td>{inq.customer?.companyName || 'Unknown'}</td>
-                            <td>
-                              <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
-                                {inq.visit?.opportunity || '-'}
-                              </span>
-                            </td>
-                            <td className="text-end">
-                              <Link
-                                to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                                className="btn-pocika btn-pocika-ghost btn-sm"
-                              >
-                                View
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
+                        {recentInquiries.map((inq) => {
+                          const unviewed = isNewInquiry(inq);
+                          return (
+                            <tr
+                              key={inq._id || inq.inquiryNumber}
+                              style={unviewed ? { backgroundColor: 'rgba(255, 237, 237, 0.35)' } : {}}
+                            >
+                              <td className="fw-semibold">
+                                <Link
+                                  to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                                  className="text-primary text-decoration-none d-inline-flex align-items-center gap-1"
+                                  onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
+                                >
+                                  {inq.inquiryNumber || '-'}
+                                  {unviewed && (
+                                    <span
+                                      className="badge bg-danger text-white rounded-pill ms-1"
+                                      style={{ fontSize: '0.60rem', padding: '2px 6px', letterSpacing: '0.4px' }}
+                                      title="New unviewed inquiry"
+                                    >
+                                      ● NEW
+                                    </span>
+                                  )}
+                                </Link>
+                              </td>
+                              <td>{formatDate(inq.date)}</td>
+                              <td className="fw-medium text-truncate" style={{ maxWidth: '160px' }}>
+                                {inq.customer?.companyName || 'Unknown'}
+                              </td>
+                              <td>
+                                <span className="badge bg-light text-dark border" style={{ fontSize: '0.72rem' }}>
+                                  {inq.salesPerson || '-'}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
+                                  {inq.visit?.opportunity || '-'}
+                                </span>
+                              </td>
+                              <td>
+                                <span
+                                  className={`badge ${
+                                    inq.followUp?.dealStatus === 'Won'
+                                      ? 'bg-success'
+                                      : inq.followUp?.dealStatus === 'Lost'
+                                      ? 'bg-danger'
+                                      : 'bg-warning text-dark'
+                                  }`}
+                                  style={{ fontSize: '0.72rem' }}
+                                >
+                                  {inq.followUp?.dealStatus || 'Pending'}
+                                </span>
+                              </td>
+                              <td>{formatDate(inq.followUp?.followUpDate)}</td>
+                              <td className="text-end">
+                                <Link
+                                  to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                                  className={`btn-pocika btn-sm ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-ghost'}`}
+                                  onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
+                                >
+                                  View &rarr;
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Mobile Cards */}
+                  {/* Mobile Cards View */}
                   <div className="d-md-none d-flex flex-column gap-3">
-                    {recentInquiries.map((inq) => (
-                      <div key={inq._id || inq.inquiryNumber} className="border rounded-3 p-3 bg-white">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <span className="fw-bold">{inq.inquiryNumber}</span>
-                          <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
-                            {inq.visit?.opportunity}
-                          </span>
-                        </div>
-                        <div className="fw-semibold text-truncate mb-1">
-                          {inq.customer?.companyName}
-                        </div>
-                        <div className="text-muted small mb-2">
-                          {inq.customer?.siteLocation} · {formatDate(inq.date)}
-                        </div>
-                        <Link
-                          to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                          className="btn-pocika btn-pocika-secondary btn-sm w-100"
+                    {recentInquiries.map((inq) => {
+                      const unviewed = isNewInquiry(inq);
+                      return (
+                        <div
+                          key={inq._id || inq.inquiryNumber}
+                          className={`border rounded-3 p-3 bg-white ${unviewed ? 'border-danger border-2' : ''}`}
                         >
-                          View Details
-                        </Link>
-                      </div>
-                    ))}
+                          <div className="d-flex justify-content-between align-items-start mb-2">
+                            <span className="fw-bold d-inline-flex align-items-center gap-1">
+                              {inq.inquiryNumber}
+                              {unviewed && (
+                                <span
+                                  className="badge bg-danger text-white rounded-pill ms-1"
+                                  style={{ fontSize: '0.62rem', padding: '2px 6px' }}
+                                >
+                                  ● NEW
+                                </span>
+                              )}
+                            </span>
+                            <div className="d-flex gap-1">
+                              <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
+                                {inq.visit?.opportunity}
+                              </span>
+                              <span
+                                className={`badge ${
+                                  inq.followUp?.dealStatus === 'Won'
+                                    ? 'bg-success'
+                                    : inq.followUp?.dealStatus === 'Lost'
+                                    ? 'bg-danger'
+                                    : 'bg-warning text-dark'
+                                }`}
+                                style={{ fontSize: '0.65rem' }}
+                              >
+                                {inq.followUp?.dealStatus || 'Pending'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="fw-semibold text-truncate mb-1">
+                            {inq.customer?.companyName}
+                          </div>
+                          <div className="text-muted small mb-2">
+                            {inq.customer?.siteLocation} · {formatDate(inq.date)}
+                          </div>
+                          <Link
+                            to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                            className={`btn-pocika btn-sm w-100 ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-secondary'}`}
+                            onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
+                          >
+                            View Details &rarr;
+                          </Link>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -310,7 +533,7 @@ export default function Dashboard() {
               ) : (
                 <div className="d-flex flex-column gap-3">
                   {displayedFollowUps.slice(0, 8).map((inq) => {
-                    const isOverdue = inq.followUp?.followUpDate && inq.followUp.followUpDate < today && inq.status !== 'Won' && inq.status !== 'Lost';
+                    const isOverdue = inq.followUp?.followUpDate && inq.followUp.followUpDate < today && inq.followUp?.dealStatus !== 'Won' && inq.followUp?.dealStatus !== 'Lost';
                     const isToday = inq.followUp?.followUpDate === today;
 
                     return (

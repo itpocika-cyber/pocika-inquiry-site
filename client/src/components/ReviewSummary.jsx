@@ -62,15 +62,30 @@ export default function ReviewSummary({ formData, onEditStep }) {
         { label: 'Estimated Quantity', value: formData.requirement?.estimatedQuantity },
         { label: 'Current Brand/Supplier', value: formData.requirement?.currentBrand },
         { label: 'Current Purchase/Requirement', value: formData.requirement?.currentPurchase },
-        { label: 'Reason', value: formData.requirement?.reason }
+        { label: 'Reason', value: formData.requirement?.reason },
+        { label: 'AMC / Contract Expiry Date', value: formData.requirement?.renewalDueDate }
       ]
     },
     {
       title: 'Commercial / Sales Qualification',
       step: 4,
       fields: [
-        { label: 'Approx. Requirement Value', value: formData.commercial?.requirementValue ? `₹${formData.commercial.requirementValue}` : '' },
-        { label: 'Expected Order Value', value: formData.commercial?.expectedOrderValue ? `₹${formData.commercial.expectedOrderValue}` : '' },
+        {
+          label: 'Approx. Requirement Value',
+          value: formData.commercial?.requirementValue
+            ? (String(formData.commercial.requirementValue).startsWith('₹')
+                ? formData.commercial.requirementValue
+                : `₹${formData.commercial.requirementValue}`)
+            : ''
+        },
+        {
+          label: 'Expected Order Value',
+          value: formData.commercial?.expectedOrderValue
+            ? (String(formData.commercial.expectedOrderValue).startsWith('₹')
+                ? formData.commercial.expectedOrderValue
+                : `₹${formData.commercial.expectedOrderValue}`)
+            : ''
+        },
         { label: 'Budget', value: formData.commercial?.budget },
         { label: 'Payment Terms Expected', value: formData.commercial?.paymentTerms },
         { label: 'Competitor/Brands', value: formData.commercial?.competitors },

@@ -24,8 +24,8 @@ const upload = multer({
     files: 5
   },
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowed.includes(file.mimetype)) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (allowed.includes(file.mimetype?.toLowerCase()) || /\.(jpe?g|png|webp)$/i.test(file.originalname)) {
       cb(null, true);
     } else {
       const err = new Error(`Unsupported file type: ${file.mimetype}. Allowed: JPEG, PNG, WebP.`);

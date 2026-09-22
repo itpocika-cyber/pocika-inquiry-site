@@ -8,6 +8,8 @@ import authRoutes from './routes/auth.routes.js';
 import inquiryRoutes from './routes/inquiry.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import userRoutes from './routes/user.routes.js';
+import catalogRoutes from './routes/catalog.routes.js';
+import announcementRoutes from './routes/announcement.routes.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
@@ -93,6 +95,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/inquiries', inquiryRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/catalog', catalogRoutes);
+app.use('/api/v1/announcements', announcementRoutes);
 
 // 404 Handler
 app.use(notFound);

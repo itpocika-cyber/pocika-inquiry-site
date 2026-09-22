@@ -38,12 +38,13 @@ const inquirySchema = new mongoose.Schema({
     estimatedQuantity: { type: String, default: "" },
     currentBrand: { type: String, default: "" },
     currentPurchase: { type: String, default: "" },
-    reason: { type: String, default: "" }
+    reason: { type: String, default: "" },
+    renewalDueDate: { type: String, default: "" } // Phase 10.B: YYYY-MM-DD
   },
   
   commercial: {
-    requirementValue: { type: Number, default: null },
-    expectedOrderValue: { type: Number, default: null },
+    requirementValue: { type: mongoose.Schema.Types.Mixed, default: null }, // Phase 10.J: Number or bracket string
+    expectedOrderValue: { type: mongoose.Schema.Types.Mixed, default: null }, // Phase 10.J: Number or bracket string
     budget: { type: String, default: "" },
     paymentTerms: { type: String, default: "" },
     decisionMakerName: { type: String, default: "" },
@@ -66,7 +67,8 @@ const inquirySchema = new mongoose.Schema({
     nextVisitType: { type: String, default: "" },
     quotationDate: { type: String, default: "" },
     followUpDate: { type: String, required: true },
-    nextActionCommitment: { type: String, default: "" }
+    nextActionCommitment: { type: String, default: "" },
+    dealStatus: { type: String, enum: ['Pending', 'Won', 'Lost'], default: 'Pending' } // Phase 10.C
   },
   
   remarks: { type: String, default: "" },
@@ -77,6 +79,8 @@ const inquirySchema = new mongoose.Schema({
     secureUrl: { type: String, default: '' },
     url: { type: String, default: '' },
     caption: { type: String, default: '' },
+    latitude: { type: Number, default: null }, // Phase 10.F: optional GPS tag
+    longitude: { type: Number, default: null }, // Phase 10.F: optional GPS tag
     resourceType: { type: String, default: 'image' },
     format: { type: String, default: 'jpg' },
     width: { type: Number, default: 0 },
@@ -101,11 +105,23 @@ const inquirySchema = new mongoose.Schema({
   },
 
   managerReview: {
-    status: { type: String, enum: ['Pending', 'Reviewed', 'Approved', 'Rejected'], default: 'Pending' },
+    status: { type: String, enum: ['Pending', 'Reviewed', 'Needs Follow-up', 'Approved', 'Rejected'], default: 'Pending' }, // Phase 10.L
     reviewedBy: { type: String, default: '' },
     reviewedAt: { type: Date, default: null },
     remarks: { type: String, default: '' }
   },
+
+  comments: [{ // Phase 10.M: Per-inquiry internal/external comment thread
+    commentId: { type: String, default: () => crypto.randomUUID() },
+    text: { type: String, required: true },
+    author: {
+      userId: { type: String, default: '' },
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      role: { type: String, required: true }
+    },
+    createdAt: { type: Date, default: Date.now }
+  }],
 
   companyKey: { type: String, index: true, default: '' },
 
@@ -140,5 +156,7 @@ inquirySchema.index({ 'visit.opportunity': 1 });
 inquirySchema.index({ 'followUp.followUpDate': 1 });
 inquirySchema.index({ date: 1 });
 inquirySchema.index({ status: 1 });
+inquirySchema.index({ 'requirement.renewalDueDate': 1 });
+inquirySchema.index({ 'followUp.dealStatus': 1 });
 
 export const Inquiry = mongoose.model('Inquiry', inquirySchema);

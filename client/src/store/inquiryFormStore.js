@@ -3,6 +3,44 @@ import api from '../api/client';
 import uploadApi from '../api/uploadApi';
 
 const DRAFT_KEY = 'pocika_inquiry_draft';
+const OFFLINE_QUEUE_KEY = 'pocika_offline_inquiry_queue';
+
+export const getOfflineQueue = () => {
+  try {
+    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const syncOfflineQueue = async () => {
+  const queue = getOfflineQueue();
+  if (!queue.length) return 0;
+  let synced = 0;
+  const remaining = [];
+  for (const item of queue) {
+    try {
+      await api.post('/inquiries', item.payload);
+      synced++;
+    } catch (e) {
+      console.warn('Offline sync retry failed for item:', e);
+      remaining.push(item);
+    }
+  }
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+  return synced;
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    syncOfflineQueue().then((syncedCount) => {
+      if (syncedCount > 0) {
+        console.log(`Successfully synced ${syncedCount} offline inquiries.`);
+      }
+    });
+  });
+}
 
 export const getInitialInquiryData = () => ({
   inquiryNumber: '',
@@ -37,7 +75,8 @@ export const getInitialInquiryData = () => ({
     estimatedQuantity: '',
     currentBrand: '',
     currentPurchase: '',
-    reason: ''
+    reason: '',
+    renewalDueDate: ''
   },
   commercial: {
     requirementValue: '',
@@ -148,11 +187,11 @@ export const useInquiryFormStore = create((set, get) => ({
     get().saveDraftDebounced();
   },
 
-  addPhotoFiles: async (files) => {
+  addPhotoFiles: async (files, coords = null) => {
     const { formData } = get();
     const maxPhotos = 5;
     const maxBytes = 10 * 1024 * 1024; // 10 MB per Phase 9 spec
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
     const existingPhotos = [...(formData.photos || [])];
     let error = null;
@@ -163,7 +202,9 @@ export const useInquiryFormStore = create((set, get) => ({
         error = `Maximum ${maxPhotos} photos allowed.`;
         break;
       }
-      if (!allowedTypes.includes(file.type)) {
+      const isAllowed = allowedTypes.includes(file.type?.toLowerCase()) ||
+        /\.(jpe?g|png|webp)$/i.test(file.name);
+      if (!isAllowed) {
         error = `${file.name}: Only JPEG, PNG, and WebP images are allowed.`;
         break;
       }
@@ -188,6 +229,8 @@ export const useInquiryFormStore = create((set, get) => ({
       caption: file.name,
       previewUrl: URL.createObjectURL(file),
       sizeKB: Math.round(file.size / 1024),
+      latitude: coords?.latitude || null,
+      longitude: coords?.longitude || null,
       isUploading: true
     }));
 
@@ -218,6 +261,8 @@ export const useInquiryFormStore = create((set, get) => ({
         originalFileName: up.originalFileName || up.fileName || '',
         previewUrl: up.secureUrl || up.url,
         sizeKB: up.sizeKB || 0,
+        latitude: coords?.latitude || up.latitude || null,
+        longitude: coords?.longitude || up.longitude || null,
         uploadedAt: up.uploadedAt || new Date()
       }));
 
@@ -468,6 +513,38 @@ export const useInquiryFormStore = create((set, get) => ({
     });
   },
 
+  prefillCompanyDetails: (prev) => {
+    const { formData } = get();
+    const updated = {
+      ...formData,
+      customer: {
+        companyName: prev.customer?.companyName || formData.customer.companyName,
+        contactPerson: prev.customer?.contactPerson || '',
+        designation: prev.customer?.designation || '',
+        mobile: prev.customer?.mobile || '',
+        email: prev.customer?.email || '',
+        billingAddress: prev.customer?.billingAddress || '',
+        siteLocation: prev.customer?.siteLocation || '',
+        gstNo: prev.customer?.gstNo || ''
+      },
+      business: {
+        customerType: prev.business?.customerType || '',
+        customerTypeOther: prev.business?.customerTypeOther || '',
+        industryType: prev.business?.industryType || '',
+        locationGidc: prev.business?.locationGidc || '',
+        facility: prev.business?.facility || '',
+        facilityOther: prev.business?.facilityOther || '',
+        areaSqft: prev.business?.areaSqft || '',
+        floors: prev.business?.floors || '',
+        status: prev.business?.status || '',
+        expectedDate: ''
+      },
+      hasProductRequirement: true
+    };
+    set({ formData: updated, currentStep: 3, validationErrors: {} });
+    get().saveDraftDebounced();
+  },
+
   submitInquiry: async () => {
     const { formData } = get();
     set({ isSubmitting: true, submissionError: null });
@@ -485,6 +562,8 @@ export const useInquiryFormStore = create((set, get) => ({
         originalFileName: p.originalFileName || p.fileName || '',
         previewUrl: p.secureUrl || p.url || p.previewUrl,
         sizeKB: p.sizeKB || 0,
+        latitude: p.latitude || null,
+        longitude: p.longitude || null,
         uploadedAt: p.uploadedAt || new Date()
       }));
 
@@ -492,6 +571,27 @@ export const useInquiryFormStore = create((set, get) => ({
         ...cleanData,
         photos: cleanPhotos
       };
+
+      // Check if browser is currently offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const queue = getOfflineQueue();
+        const queuedItem = {
+          id: 'offline-' + Date.now(),
+          payload,
+          savedAt: new Date().toISOString()
+        };
+        queue.push(queuedItem);
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+        const mockResult = {
+          ...payload,
+          inquiryNumber: 'SAVED-OFFLINE',
+          isOfflineQueued: true
+        };
+        sessionStorage.setItem('pocika_submitted_inquiry', JSON.stringify(mockResult));
+        get().clearDraft();
+        set({ isSubmitting: false });
+        return mockResult;
+      }
 
       const res = await api.post('/inquiries', payload);
       const createdInquiry = res.data;
@@ -507,6 +607,25 @@ export const useInquiryFormStore = create((set, get) => ({
       set({ isSubmitting: false });
       return createdInquiry;
     } catch (err) {
+      if (err.code === 'NETWORK_ERROR' || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        const queue = getOfflineQueue();
+        const queuedItem = {
+          id: 'offline-' + Date.now(),
+          payload,
+          savedAt: new Date().toISOString()
+        };
+        queue.push(queuedItem);
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+        const mockResult = {
+          ...payload,
+          inquiryNumber: 'SAVED-OFFLINE',
+          isOfflineQueued: true
+        };
+        sessionStorage.setItem('pocika_submitted_inquiry', JSON.stringify(mockResult));
+        get().clearDraft();
+        set({ isSubmitting: false });
+        return mockResult;
+      }
       set({ isSubmitting: false, submissionError: err.message });
       throw err;
     }

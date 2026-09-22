@@ -66,12 +66,13 @@ export const inquirySchema = z.object({
     estimatedQuantity: optionalTrimmedString,
     currentBrand: optionalTrimmedString,
     currentPurchase: optionalTrimmedString,
-    reason: optionalTrimmedString
+    reason: optionalTrimmedString,
+    renewalDueDate: optionalTrimmedString
   }).optional().default({}),
   
   commercial: z.object({
-    requirementValue: coerceToNullableNumber,
-    expectedOrderValue: coerceToNullableNumber,
+    requirementValue: z.union([z.number(), z.string()]).nullable().optional(),
+    expectedOrderValue: z.union([z.number(), z.string()]).nullable().optional(),
     budget: optionalTrimmedString,
     paymentTerms: optionalTrimmedString,
     decisionMakerName: optionalTrimmedString,
@@ -98,7 +99,8 @@ export const inquirySchema = z.object({
     nextVisitType: optionalTrimmedString,
     quotationDate: optionalTrimmedString,
     followUpDate: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Follow Up Date is required')),
-    nextActionCommitment: optionalTrimmedString
+    nextActionCommitment: optionalTrimmedString,
+    dealStatus: z.enum(['Pending', 'Won', 'Lost']).optional().default('Pending')
   }),
   
   remarks: optionalTrimmedString,
@@ -106,9 +108,21 @@ export const inquirySchema = z.object({
   photos: z.array(z.record(z.any())).optional().default([])
 });
 
-export const updateInquirySchema = inquirySchema.partial().extend({
+export const updateInquirySchema = inquirySchema.partial().passthrough().extend({
+  followUp: z.object({
+    nextAction: z.preprocess((val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      return [String(val)];
+    }, z.array(z.string()).default([])).optional(),
+    nextVisitType: optionalTrimmedString,
+    quotationDate: optionalTrimmedString,
+    followUpDate: optionalTrimmedString,
+    nextActionCommitment: optionalTrimmedString,
+    dealStatus: z.enum(['Pending', 'Won', 'Lost']).optional()
+  }).optional(),
   managerReview: z.object({
-    status: z.enum(['Pending', 'Reviewed', 'Approved', 'Rejected']).optional(),
+    status: z.enum(['Pending', 'Reviewed', 'Needs Follow-up', 'Approved', 'Rejected']).optional(),
     remarks: optionalTrimmedString,
     reviewedBy: optionalTrimmedString
   }).optional()

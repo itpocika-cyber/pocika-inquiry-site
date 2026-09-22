@@ -32,10 +32,25 @@ export default function InquiryForm() {
     initDraft,
     dismissRestoredAlert,
     clearDraft,
-    submitInquiry
+    submitInquiry,
+    prefillCompanyDetails
   } = useInquiryFormStore();
 
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+
+  // Offline status tracking
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Company History Tracking State
   const [historyMatches, setHistoryMatches] = useState([]);
@@ -167,6 +182,16 @@ export default function InquiryForm() {
           </div>
         )}
 
+        {/* Offline Warning Banner */}
+        {isOffline && (
+          <div className="alert-pocika alert-warning mb-4 d-flex align-items-center gap-2">
+            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+            <div>
+              <strong>Working offline.</strong> You can complete and submit this visit without internet. It will be saved locally on your device and automatically synced once you're back online.
+            </div>
+          </div>
+        )}
+
         <div className="form-shell">
           {/* Stepper */}
           <Stepper
@@ -197,10 +222,10 @@ export default function InquiryForm() {
                   )}
                 </div>
 
-                {/* Company History Alert Banner */}
+                {/* Company History Alert Banner with Quick Re-visit */}
                 {historyMatches.length > 0 && !historyDismissed && (
                   <div className="alert-pocika alert-info mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
-                    <div className="d-flex align-items-center gap-2">
+                    <div className="d-flex align-items-center flex-wrap gap-2">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="16" x2="12" y2="12" />
@@ -215,6 +240,17 @@ export default function InquiryForm() {
                         onClick={() => setShowHistoryModal(true)}
                       >
                         View History
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-pocika btn-pocika-primary btn-sm py-1 px-2"
+                        style={{ fontSize: '0.8rem', borderRadius: '6px' }}
+                        onClick={() => {
+                          prefillCompanyDetails(historyMatches[0]);
+                          setHistoryDismissed(true);
+                        }}
+                      >
+                        ⚡ Start new visit using this company's details &rarr;
                       </button>
                     </div>
                     <button
@@ -643,18 +679,29 @@ export default function InquiryForm() {
                     Products<span className="required-mark">*</span>
                   </label>
                   <div className="row g-2">
-                    {productOptions.map((prod) => (
-                      <div key={prod} className="col-6 col-md-4">
-                        <label className="product-card">
-                          <input
-                            type="checkbox"
-                            checked={formData.products?.includes(prod)}
-                            onChange={() => toggleArrayItem('products', prod)}
-                          />
-                          <span className="product-card-label">{prod}</span>
-                        </label>
-                      </div>
-                    ))}
+                    {productOptions.map((prod) => {
+                      const isSelected = formData.products?.includes(prod);
+                      return (
+                        <div key={prod} className="col-6 col-md-4">
+                          <label className={`product-card ${isSelected ? 'is-selected' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleArrayItem('products', prod)}
+                            />
+                            <span className="product-card-label">{prod}</span>
+                            {isSelected && (
+                              <span
+                                className="badge bg-primary text-white ms-auto"
+                                style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px' }}
+                              >
+                                ✓
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
                   </div>
                   {validationErrors['products'] && (
                     <span className="field-error is-visible mt-2">
@@ -759,6 +806,20 @@ export default function InquiryForm() {
                     ))}
                   </div>
                 </div>
+
+                {/* Optional AMC / Contract Expiry Date */}
+                <div className="field-group mt-3">
+                  <label className="field-label">AMC / Contract Expiry Date (Optional)</label>
+                  <input
+                    className="form-control-pocika"
+                    type="date"
+                    value={formData.requirement?.renewalDueDate || ''}
+                    onChange={(e) => setField('requirement.renewalDueDate', e.target.value)}
+                  />
+                  <div className="text-muted small mt-1">
+                    When is their current fire safety contract or refilling due for renewal?
+                  </div>
+                </div>
               </section>
             )}
 
@@ -770,28 +831,80 @@ export default function InquiryForm() {
                 <div className="row g-3 mb-3">
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label">Approx. Requirement Value (₹)</label>
+                      <label className="field-label mb-1">Approx. Requirement Value (₹)</label>
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {[
+                          'Under ₹50,000',
+                          '₹50,000–1,00,000',
+                          '₹1,00,000–2,50,000',
+                          '₹2,50,000–5,00,000',
+                          '₹5,00,000–10,00,000',
+                          '₹10,00,000+'
+                        ].map((bracket) => (
+                          <button
+                            key={bracket}
+                            type="button"
+                            className={`btn btn-sm ${
+                              formData.commercial?.requirementValue === bracket
+                                ? 'btn-primary text-white'
+                                : 'btn-outline-secondary'
+                            }`}
+                            style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '14px' }}
+                            onClick={() => setField('commercial.requirementValue', bracket)}
+                          >
+                            {bracket}
+                          </button>
+                        ))}
+                      </div>
                       <input
                         className="form-control-pocika"
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.commercial?.requirementValue || ''}
                         onChange={(e) => setField('commercial.requirementValue', e.target.value)}
-                        placeholder="e.g. 250000"
+                        placeholder="Select bracket above or type amount (e.g. 250000)"
                       />
+                      <span className="text-muted small mt-1 d-block">
+                        Approximate ranges are acceptable if exact numbers are not known.
+                      </span>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label">Expected Order Value (₹)</label>
+                      <label className="field-label mb-1">Expected Order Value (₹)</label>
+                      <div className="d-flex flex-wrap gap-1 mb-2">
+                        {[
+                          'Under ₹50,000',
+                          '₹50,000–1,00,000',
+                          '₹1,00,000–2,50,000',
+                          '₹2,50,000–5,00,000',
+                          '₹5,00,000–10,00,000',
+                          '₹10,00,000+'
+                        ].map((bracket) => (
+                          <button
+                            key={bracket}
+                            type="button"
+                            className={`btn btn-sm ${
+                              formData.commercial?.expectedOrderValue === bracket
+                                ? 'btn-primary text-white'
+                                : 'btn-outline-secondary'
+                            }`}
+                            style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '14px' }}
+                            onClick={() => setField('commercial.expectedOrderValue', bracket)}
+                          >
+                            {bracket}
+                          </button>
+                        ))}
+                      </div>
                       <input
                         className="form-control-pocika"
-                        type="number"
-                        step="0.01"
+                        type="text"
                         value={formData.commercial?.expectedOrderValue || ''}
                         onChange={(e) => setField('commercial.expectedOrderValue', e.target.value)}
-                        placeholder="e.g. 200000"
+                        placeholder="Select bracket above or type amount (e.g. 200000)"
                       />
+                      <span className="text-muted small mt-1 d-block">
+                        Approximate ranges are acceptable if exact numbers are not known.
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1315,14 +1428,30 @@ export default function InquiryForm() {
                             {inq.visit?.requirementDiscussed || inq.remarks || '-'}
                           </td>
                           <td className="text-end">
-                            <a
-                              href={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn-pocika btn-pocika-ghost btn-sm"
-                            >
-                              View Details &nearr;
-                            </a>
+                            <div className="d-flex justify-content-end gap-1">
+                              <button
+                                type="button"
+                                className="btn-pocika btn-pocika-primary btn-sm py-1 px-2"
+                                style={{ fontSize: '0.75rem' }}
+                                title="Pre-fill company details for a new visit"
+                                onClick={() => {
+                                  prefillCompanyDetails(inq);
+                                  setShowHistoryModal(false);
+                                  setHistoryDismissed(true);
+                                }}
+                              >
+                                Re-visit &rarr;
+                              </button>
+                              <a
+                                href={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-pocika btn-pocika-ghost btn-sm py-1 px-2"
+                                style={{ fontSize: '0.75rem' }}
+                              >
+                                View &nearr;
+                              </a>
+                            </div>
                           </td>
                         </tr>
                       ))}

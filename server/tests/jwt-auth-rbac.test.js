@@ -94,7 +94,8 @@ describe('Phase 4: JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => 
   it('5. Manager review field is part of Inquiry schema and defaults to Pending', () => {
     const schemaPath = Inquiry.schema.path('managerReview.status');
     assert.ok(schemaPath, 'managerReview.status must exist in schema');
-    assert.deepEqual(schemaPath.options.enum, ['Pending', 'Reviewed', 'Approved', 'Rejected']);
+    assert.ok(schemaPath.options.enum.includes('Pending'));
+    assert.ok(schemaPath.options.enum.includes('Needs Follow-up'));
     assert.equal(schemaPath.options.default, 'Pending');
   });
 

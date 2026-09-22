@@ -33,6 +33,7 @@ export default function ManageTeam() {
     password: ''
   });
   const [createdSuccess, setCreatedSuccess] = useState(null); // { email, password, name }
+  const [salesPerformance, setSalesPerformance] = useState([]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -43,9 +44,16 @@ export default function ManageTeam() {
       if (statusFilter !== '') params.append('isActive', statusFilter);
       if (search.trim()) params.append('search', search.trim());
 
-      const res = await api.get(`/users?${params.toString()}`);
-      if (res.data?.users) {
-        setUsers(res.data.users);
+      const [usersRes, sumRes] = await Promise.all([
+        api.get(`/users?${params.toString()}`),
+        api.get('/inquiries/summary').catch(() => ({ data: null }))
+      ]);
+
+      if (usersRes.data?.users) {
+        setUsers(usersRes.data.users);
+      }
+      if (sumRes.data?.salesPerformance) {
+        setSalesPerformance(sumRes.data.salesPerformance);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch team members.');
@@ -207,6 +215,84 @@ export default function ManageTeam() {
           </div>
         )}
 
+        {/* Sales Performance Leaderboard (This Month) */}
+        {salesPerformance && salesPerformance.length > 0 && (
+          <div className="card-pocika p-4 mb-4">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom pb-2 mb-3">
+              <div>
+                <h2 className="text-field-label m-0" style={{ fontSize: '1.15rem' }}>
+                  🏆 Sales Performance Leaderboard (This Month)
+                </h2>
+                <p className="text-muted small mb-0">
+                  Rankings based on visits, hot opportunities, and won deals this month.
+                </p>
+              </div>
+              <span className="badge bg-light text-primary border small">
+                {salesPerformance.length} Sales Executives
+              </span>
+            </div>
+            {/* Desktop Table View */}
+            <div className="d-none d-md-block table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Rank & Salesperson</th>
+                    <th className="text-center">Visits This Month</th>
+                    <th className="text-center">Hot Leads</th>
+                    <th className="text-center">Won Deals</th>
+                    <th className="text-center">Lost Deals</th>
+                    <th className="text-end">Conversion Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesPerformance.map((sp, idx) => (
+                    <tr key={idx}>
+                      <td className="fw-semibold">
+                        <span className="me-2" style={{ fontSize: '1.1rem' }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                        </span>
+                        {sp.name}
+                      </td>
+                      <td className="text-center fw-medium">{sp.totalThisMonth}</td>
+                      <td className="text-center">
+                        <span className="badge bg-danger text-white">{sp.hotLeads}</span>
+                      </td>
+                      <td className="text-center">
+                        <span className="badge bg-success text-white">{sp.wonDeals}</span>
+                      </td>
+                      <td className="text-center text-muted">{sp.lostDeals}</td>
+                      <td className="text-end fw-bold text-primary">{sp.conversionRate}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards for Leaderboard */}
+            <div className="d-md-none d-flex flex-column gap-2">
+              {salesPerformance.map((sp, idx) => (
+                <div key={idx} className="border rounded-3 p-3 bg-white shadow-sm">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="fw-bold d-flex align-items-center gap-2">
+                      <span style={{ fontSize: '1.1rem' }}>
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                      </span>
+                      <span>{sp.name}</span>
+                    </div>
+                    <span className="badge bg-primary fs-6">{sp.conversionRate}% Win</span>
+                  </div>
+                  <div className="d-flex justify-content-between text-muted small pt-2 border-top">
+                    <span>Visits: <strong>{sp.totalThisMonth}</strong></span>
+                    <span>Hot: <strong className="text-danger">{sp.hotLeads}</strong></span>
+                    <span>Won: <strong className="text-success">{sp.wonDeals}</strong></span>
+                    <span>Lost: <strong className="text-secondary">{sp.lostDeals}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filter Toolbar */}
         <div className="card-pocika p-3 mb-4">
           <div className="row g-3 align-items-center">
@@ -270,7 +356,8 @@ export default function ManageTeam() {
           />
         ) : (
           <div className="card-pocika overflow-hidden">
-            <div className="table-responsive">
+            {/* Desktop Table View */}
+            <div className="d-none d-md-block table-responsive">
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
@@ -361,6 +448,75 @@ export default function ManageTeam() {
                   })()}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Cards for Team Members */}
+            <div className="d-md-none d-flex flex-column gap-3 p-3">
+              {(() => {
+                const paginatedUsers = users.slice((page - 1) * pageSize, page * pageSize);
+                return paginatedUsers.map((u) => {
+                  const isSelf = u.id === currentUser?.id || u.userId === currentUser?.userId;
+                  const memberId = u.id || u.userId || u._id;
+                  return (
+                    <div key={memberId} className="border rounded-3 p-3 bg-white shadow-sm">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div className="d-flex align-items-center gap-2">
+                          <div
+                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              background: u.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            {(u.displayName || u.email).slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="fw-semibold">
+                              {u.displayName}
+                              {isSelf && <span className="badge bg-secondary ms-1" style={{ fontSize: '0.62rem' }}>You</span>}
+                            </div>
+                            <div className="text-muted small">{u.email}</div>
+                          </div>
+                        </div>
+                        <span className={getRoleBadgeClass(u.role)} style={{ fontSize: '0.72rem' }}>
+                          {u.role?.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                        <div>
+                          {u.isActive ? (
+                            <span className="badge bg-success" style={{ fontSize: '0.7rem' }}>Active</span>
+                          ) : (
+                            <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>Inactive</span>
+                          )}
+                          <span className="text-muted small ms-2" style={{ fontSize: '0.7rem' }}>
+                            Created: {formatDate(u.createdAt)}
+                          </span>
+                        </div>
+                        <div className="d-flex gap-1">
+                          <button
+                            type="button"
+                            className="btn-pocika btn-pocika-ghost btn-sm py-1 px-2"
+                            onClick={() => navigate(`/admin/team/${memberId}`)}
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn-pocika btn-sm py-1 px-2 ${u.isActive ? 'btn-pocika-secondary' : 'btn-pocika-primary'}`}
+                            disabled={isSelf}
+                            onClick={() => handleToggleStatus(u)}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
 
             {/* Pagination Controls */}

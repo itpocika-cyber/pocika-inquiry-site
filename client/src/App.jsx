@@ -12,6 +12,8 @@ import ManageTeam from './pages/ManageTeam';
 import SalesMemberDetail from './pages/SalesMemberDetail';
 import Success from './pages/Success';
 import DesignSystem from './pages/DesignSystem';
+import ProductCatalog from './pages/ProductCatalog';
+import ManageCatalog from './pages/ManageCatalog';
 import { useAuthStore } from './store/authStore';
 
 function RootRedirect() {
@@ -42,11 +44,11 @@ export default function App() {
           }
         />
 
-        {/* Sales-Only Routes */}
+        {/* Shared Inquiries & Dashboard Routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['sales_person']}>
+            <ProtectedRoute allowedRoles={['sales_person', 'admin', 'super_admin', 'manager']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -55,7 +57,7 @@ export default function App() {
         <Route
           path="/inquiries"
           element={
-            <ProtectedRoute allowedRoles={['sales_person']}>
+            <ProtectedRoute allowedRoles={['sales_person', 'admin', 'super_admin', 'manager']}>
               <InquiriesList />
             </ProtectedRoute>
           }
@@ -113,6 +115,26 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin', 'manager']}>
               <SalesMemberDetail />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catalog Reference Route (Available to both sales and admins) */}
+        <Route
+          path="/catalog"
+          element={
+            <ProtectedRoute>
+              <ProductCatalog />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Manage Catalog Route (Admin/Manager only) */}
+        <Route
+          path="/admin/catalog"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'manager']}>
+              <ManageCatalog />
             </ProtectedRoute>
           }
         />

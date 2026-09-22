@@ -60,10 +60,22 @@ export default function Header() {
                   Admin Dashboard
                 </Link>
                 <Link
+                  to="/inquiries"
+                  className={`main-nav-link ${location.pathname === '/inquiries' ? 'is-active' : ''}`}
+                >
+                  All Inquiries
+                </Link>
+                <Link
                   to="/admin/team"
                   className={`main-nav-link ${location.pathname.startsWith('/admin/team') ? 'is-active' : ''}`}
                 >
                   Manage Sales Team
+                </Link>
+                <Link
+                  to="/admin/catalog"
+                  className={`main-nav-link ${location.pathname.startsWith('/admin/catalog') ? 'is-active' : ''}`}
+                >
+                  Catalog
                 </Link>
               </>
             ) : (
@@ -79,6 +91,12 @@ export default function Header() {
                   className={`main-nav-link ${location.pathname === '/inquiries' ? 'is-active' : ''}`}
                 >
                   My Inquiries
+                </Link>
+                <Link
+                  to="/catalog"
+                  className={`main-nav-link ${location.pathname === '/catalog' ? 'is-active' : ''}`}
+                >
+                  Catalog
                 </Link>
               </>
             )}
@@ -201,11 +219,25 @@ export default function Header() {
                 Admin Dashboard
               </Link>
               <Link
+                to="/inquiries"
+                className={`mobile-nav-link ${location.pathname === '/inquiries' ? 'is-active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                All Inquiries
+              </Link>
+              <Link
                 to="/admin/team"
                 className={`mobile-nav-link ${location.pathname.startsWith('/admin/team') ? 'is-active' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Manage Sales Team
+              </Link>
+              <Link
+                to="/admin/catalog"
+                className={`mobile-nav-link ${location.pathname.startsWith('/admin/catalog') ? 'is-active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Product Catalog
               </Link>
             </>
           ) : (
@@ -223,6 +255,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 My Inquiries
+              </Link>
+              <Link
+                to="/catalog"
+                className={`mobile-nav-link ${location.pathname === '/catalog' ? 'is-active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Product Catalog
               </Link>
               <Link
                 to="/inquiry"

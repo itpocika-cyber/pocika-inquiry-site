@@ -6,7 +6,9 @@ import {
   updateInquiry,
   getSummary,
   downloadInquiryPdf,
-  getCompanyHistory
+  getCompanyHistory,
+  exportInquiriesExcel,
+  addInquiryComment
 } from '../controllers/inquiry.controller.js';
 import {
   uploadMiddleware,
@@ -22,11 +24,13 @@ const router = express.Router();
 // All inquiry endpoints require authentication
 router.get('/summary', authenticateUser, getSummary);
 router.get('/company-history', authenticateUser, getCompanyHistory);
+router.get('/export/excel', authenticateUser, exportInquiriesExcel);
 router.post('/', authenticateUser, validateInquiry, createInquiry);
 router.get('/', authenticateUser, getInquiries);
 router.get('/:id', authenticateUser, getInquiryById);
 router.get('/:id/pdf', authenticateUser, downloadInquiryPdf);
 router.patch('/:id', authenticateUser, validateInquiryUpdate, updateInquiry);
+router.post('/:id/comments', authenticateUser, addInquiryComment);
 
 // Photo endpoints
 router.post('/:id/photos', authenticateUser, uploadMiddleware, uploadInquiryPhotos);

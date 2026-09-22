@@ -8,18 +8,19 @@ const baseURL = rawBaseURL
   : '/api/v1';
 
 const api = axios.create({
-  baseURL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL
 });
 
-// Request interceptor: attach JWT token if available
+// Request interceptor: attach JWT token if available, and strip Content-Type for FormData
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('pocika_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    // If request payload is FormData, remove Content-Type so browser/axios sets multipart/form-data with proper boundary
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
     return config;
   },

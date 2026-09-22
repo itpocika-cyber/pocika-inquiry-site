@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+import ExcelJS from 'exceljs';
 import { Inquiry, computeCompanyKey } from '../models/Inquiry.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
 import { generateOptimizedUrls } from '../config/cloudinary.js';
@@ -78,6 +80,34 @@ export const getInquiries = async (req, res, next) => {
       query.status = req.query.status;
     }
 
+    // Deal Status Filter (Phase 10.C)
+    if (req.query.dealStatus) {
+      query['followUp.dealStatus'] = req.query.dealStatus;
+    }
+
+    // Manager Review Status Filter (Phase 10.L)
+    if (req.query.managerStatus) {
+      query['managerReview.status'] = req.query.managerStatus;
+    }
+
+    // Renewal Due Date Filter (Phase 10.B)
+    if (req.query.renewalsDueInDays) {
+      const days = parseInt(req.query.renewalsDueInDays, 10) || 30;
+      const today = new Date().toISOString().split('T')[0];
+      const future = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+      query['requirement.renewalDueDate'] = { $gte: today, $lte: future };
+    } else if (req.query.hasRenewal === 'true') {
+      query['requirement.renewalDueDate'] = { $exists: true, $nin: ['', null] };
+    }
+
+    // Stale Leads Filter (Phase 10.E: followUpDate < today and dealStatus is Pending)
+    if (req.query.isStale === 'true') {
+      const today = new Date().toISOString().split('T')[0];
+      query['followUp.followUpDate'] = { $lt: today };
+      query['followUp.dealStatus'] = { $in: ['Pending', null, ''] };
+      query.status = 'submitted';
+    }
+
     // Follow-up Date Filters
     if (req.query.hasFollowUp === 'true') {
       query['followUp.followUpDate'] = { $exists: true, $nin: ['', null] };
@@ -92,11 +122,14 @@ export const getInquiries = async (req, res, next) => {
     let sortObj = { date: -1 }; // default newest
     if (req.query.sortBy === 'nextFollowUpDate' || req.query.sort === 'followup') {
       sortObj = { 'followUp.followUpDate': 1 };
+    } else if (req.query.sortBy === 'renewalDueDate') {
+      sortObj = { 'requirement.renewalDueDate': 1 };
     } else if (req.query.sort) {
       switch (req.query.sort) {
         case 'newest': sortObj = { date: -1 }; break;
         case 'oldest': sortObj = { date: 1 }; break;
         case 'followup': sortObj = { 'followUp.followUpDate': 1 }; break;
+        case 'renewal': sortObj = { 'requirement.renewalDueDate': 1 }; break;
         default: sortObj = { date: -1 }; break;
       }
     }
@@ -285,26 +318,49 @@ export const updateInquiry = async (req, res, next) => {
       updateData['requirement.estimatedQuantity'] = req.body.requirement.estimatedQuantity;
     }
 
+    // Phase 10.B: Renewal Due Date
+    if (req.body['requirement.renewalDueDate'] !== undefined) {
+      updateData['requirement.renewalDueDate'] = req.body['requirement.renewalDueDate'];
+    } else if (req.body.requirement?.renewalDueDate !== undefined) {
+      updateData['requirement.renewalDueDate'] = req.body.requirement.renewalDueDate;
+    }
+
+    // Phase 10.J: Commercial fields (supports brackets string or numbers)
     if (req.body['commercial.expectedOrderValue'] !== undefined) {
-      const num = Number(req.body['commercial.expectedOrderValue']);
-      updateData['commercial.expectedOrderValue'] = isNaN(num) ? null : num;
+      updateData['commercial.expectedOrderValue'] = req.body['commercial.expectedOrderValue'];
     } else if (req.body.commercial?.expectedOrderValue !== undefined) {
-      const num = Number(req.body.commercial.expectedOrderValue);
-      updateData['commercial.expectedOrderValue'] = isNaN(num) ? null : num;
+      updateData['commercial.expectedOrderValue'] = req.body.commercial.expectedOrderValue;
     }
 
     if (req.body['commercial.requirementValue'] !== undefined) {
-      const num = Number(req.body['commercial.requirementValue']);
-      updateData['commercial.requirementValue'] = isNaN(num) ? null : num;
+      updateData['commercial.requirementValue'] = req.body['commercial.requirementValue'];
     } else if (req.body.commercial?.requirementValue !== undefined) {
-      const num = Number(req.body.commercial.requirementValue);
-      updateData['commercial.requirementValue'] = isNaN(num) ? null : num;
+      updateData['commercial.requirementValue'] = req.body.commercial.requirementValue;
+    }
+
+    if (req.body['commercial.budget'] !== undefined) {
+      updateData['commercial.budget'] = req.body['commercial.budget'];
+    } else if (req.body.commercial?.budget !== undefined) {
+      updateData['commercial.budget'] = req.body.commercial.budget;
+    }
+
+    if (req.body['commercial.paymentTerms'] !== undefined) {
+      updateData['commercial.paymentTerms'] = req.body['commercial.paymentTerms'];
+    } else if (req.body.commercial?.paymentTerms !== undefined) {
+      updateData['commercial.paymentTerms'] = req.body.commercial.paymentTerms;
     }
 
     if (req.body['visit.opportunity'] !== undefined) {
       updateData['visit.opportunity'] = req.body['visit.opportunity'];
     } else if (req.body.visit?.opportunity !== undefined) {
       updateData['visit.opportunity'] = req.body.visit.opportunity;
+    }
+
+    // Phase 10.C: Deal Status (Pending, Won, Lost)
+    if (req.body['followUp.dealStatus'] !== undefined) {
+      updateData['followUp.dealStatus'] = req.body['followUp.dealStatus'];
+    } else if (req.body.followUp?.dealStatus !== undefined) {
+      updateData['followUp.dealStatus'] = req.body.followUp.dealStatus;
     }
 
     if (req.body['followUp.nextAction'] !== undefined) {
@@ -323,7 +379,7 @@ export const updateInquiry = async (req, res, next) => {
       updateData.remarks = req.body.remarks;
     }
 
-    // Only Admin/Super Admin/Manager can update status and managerReview
+    // Manager Review: Admin, super_admin, or manager
     if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
       if (req.body.status !== undefined) {
         updateData.status = req.body.status;
@@ -391,13 +447,81 @@ export const getSummary = async (req, res, next) => {
       ]
     });
 
+    // Phase 10.C & 10.H: Current Month KPIs & Conversion Tracking
+    const monthStartStr = todayStr.substring(0, 7) + '-01';
+    const monthQuery = { ...baseQuery, date: { $gte: monthStartStr } };
+
+    const totalThisMonth = await Inquiry.countDocuments(monthQuery);
+    const hotThisMonth = await Inquiry.countDocuments({ ...monthQuery, 'visit.opportunity': 'HOT' });
+    const wonThisMonth = await Inquiry.countDocuments({ ...monthQuery, 'followUp.dealStatus': 'Won' });
+    const lostThisMonth = await Inquiry.countDocuments({ ...monthQuery, 'followUp.dealStatus': 'Lost' });
+    const pendingThisMonth = await Inquiry.countDocuments({
+      ...monthQuery,
+      $or: [{ 'followUp.dealStatus': 'Pending' }, { 'followUp.dealStatus': { $exists: false } }, { 'followUp.dealStatus': null }]
+    });
+    const closedThisMonth = wonThisMonth + lostThisMonth;
+    const conversionRate = closedThisMonth > 0 ? Math.round((wonThisMonth / closedThisMonth) * 100) : 0;
+
+    // Phase 10.B: Renewals Due Soon (next 30 days)
+    const in30DaysStr = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+    const renewalsDueSoon = await Inquiry.countDocuments({
+      ...baseQuery,
+      'requirement.renewalDueDate': { $gte: todayStr, $lte: in30DaysStr }
+    });
+
+    // Phase 10.E: Stale Leads Count (overdue & pending deal status)
+    const staleLeadsCount = await Inquiry.countDocuments({
+      ...baseQuery,
+      'followUp.followUpDate': { $lt: todayStr },
+      'followUp.dealStatus': { $in: ['Pending', null, ''] }
+    });
+
+    // Phase 10.D: Sales Performance Summary (Admin/Manager only)
+    let salesPerformance = [];
+    if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+      const perfAgg = await Inquiry.aggregate([
+        { $match: { status: 'submitted', date: { $gte: monthStartStr } } },
+        {
+          $group: {
+            _id: { $ifNull: ['$salesPerson', 'Unknown'] },
+            total: { $sum: 1 },
+            hot: {
+              $sum: { $cond: [{ $eq: ['$visit.opportunity', 'HOT'] }, 1, 0] }
+            },
+            won: {
+              $sum: { $cond: [{ $eq: ['$followUp.dealStatus', 'Won'] }, 1, 0] }
+            }
+          }
+        },
+        { $sort: { total: -1, won: -1 } }
+      ]);
+      salesPerformance = perfAgg.map(p => ({
+        name: p._id,
+        total: p.total,
+        hot: p.hot,
+        won: p.won
+      }));
+    }
+
     return successResponse(res, {
       total,
       today,
       hot,
       warm,
       pendingFollowUps,
-      quotes
+      quotes,
+      // Phase 10 additions
+      thisMonth: {
+        total: totalThisMonth,
+        hot: hotThisMonth,
+        won: wonThisMonth,
+        lost: lostThisMonth,
+        pending: pendingThisMonth,
+        conversionRate
+      },
+      renewalsDueSoon,
+      staleLeadsCount,
+      salesPerformance
     });
   } catch (error) {
     next(error);
@@ -465,6 +589,174 @@ export const downloadInquiryPdf = async (req, res, next) => {
         message: `Failed to generate inquiry PDF: ${pdfError.message}`
       }, 500);
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Phase 10.M: Add a comment to an inquiry thread
+ */
+export const addInquiryComment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return errorResponse(res, { code: 'VALIDATION_ERROR', message: 'Comment text is required' }, 400);
+    }
+
+    let inquiry = null;
+    if (id.startsWith('PSI-') || id.startsWith('INQ-')) {
+      inquiry = await Inquiry.findOne({ inquiryNumber: id });
+    } else {
+      inquiry = await Inquiry.findById(id);
+    }
+
+    if (!inquiry) {
+      return errorResponse(res, { code: 'NOT_FOUND', message: 'Inquiry not found' }, 404);
+    }
+
+    // Salesperson can only comment on their own inquiry, admin/manager can comment on any
+    if (req.user.role === 'sales_person') {
+      const isOwner =
+        (inquiry.createdBy?.userId && inquiry.createdBy.userId === req.user.id) ||
+        (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid === req.user.firebaseUid) ||
+        (inquiry.createdBy?.email && inquiry.createdBy.email.toLowerCase() === req.user.email.toLowerCase());
+      if (!isOwner) {
+        return errorResponse(res, { code: 'FORBIDDEN', message: 'Access denied. You do not have permission to comment on this inquiry.' }, 403);
+      }
+    }
+
+    const newComment = {
+      commentId: crypto.randomUUID(),
+      text: text.trim(),
+      author: {
+        userId: req.user.id,
+        name: req.user.displayName || req.user.email,
+        email: req.user.email,
+        role: req.user.role
+      },
+      createdAt: new Date()
+    };
+
+    inquiry.comments.push(newComment);
+    await inquiry.save();
+
+    return successResponse(res, { comment: newComment, comments: inquiry.comments }, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Phase 10.H: Export Inquiries to Excel (.xlsx) with Active Filters
+ */
+export const exportInquiriesExcel = async (req, res, next) => {
+  try {
+    // Only Admin / Manager can export Excel report
+    if (!['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+      return errorResponse(res, { code: 'FORBIDDEN', message: 'Access denied. Only administrators can export reports.' }, 403);
+    }
+
+    // Build query respecting filters (identical to getInquiries)
+    const query = {};
+    if (req.query.salesPerson) {
+      query.salesPerson = req.query.salesPerson;
+    }
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { inquiryNumber: searchRegex },
+        { 'customer.companyName': searchRegex },
+        { 'customer.contactPerson': searchRegex },
+        { 'customer.siteLocation': searchRegex }
+      ];
+    }
+    if (req.query.opportunity) {
+      query['visit.opportunity'] = req.query.opportunity;
+    }
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    if (req.query.dealStatus) {
+      query['followUp.dealStatus'] = req.query.dealStatus;
+    }
+    if (req.query.renewalsDueInDays) {
+      const days = parseInt(req.query.renewalsDueInDays, 10) || 30;
+      const today = new Date().toISOString().split('T')[0];
+      const future = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+      query['requirement.renewalDueDate'] = { $gte: today, $lte: future };
+    }
+    if (req.query.followUpFrom || req.query.followUpTo) {
+      query['followUp.followUpDate'] = query['followUp.followUpDate'] || {};
+      if (req.query.followUpFrom) query['followUp.followUpDate'].$gte = req.query.followUpFrom;
+      if (req.query.followUpTo) query['followUp.followUpDate'].$lte = req.query.followUpTo;
+    }
+
+    const items = await Inquiry.find(query).sort({ date: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'POCIKA Fire & Safety Products LLP';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('Inquiries Report', {
+      views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
+    });
+
+    sheet.columns = [
+      { header: 'Inquiry No.', key: 'inquiryNumber', width: 18 },
+      { header: 'Date', key: 'date', width: 14 },
+      { header: 'Salesperson', key: 'salesPerson', width: 22 },
+      { header: 'Company Name', key: 'companyName', width: 28 },
+      { header: 'Contact Person', key: 'contactPerson', width: 20 },
+      { header: 'Mobile', key: 'mobile', width: 16 },
+      { header: 'Site Location', key: 'siteLocation', width: 24 },
+      { header: 'Products Selected', key: 'products', width: 30 },
+      { header: 'Opportunity', key: 'opportunity', width: 16 },
+      { header: 'Deal Status', key: 'dealStatus', width: 14 },
+      { header: 'Next Follow-up Date', key: 'followUpDate', width: 18 },
+      { header: 'Manager Review', key: 'managerReview', width: 18 },
+      { header: 'Approx Req Value', key: 'requirementValue', width: 18 },
+      { header: 'Expected Order Value', key: 'expectedOrderValue', width: 20 }
+    ];
+
+    // Style Header Row (POCIKA brand crimson with bold white text)
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF991B1B' } // POCIKA brand red
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 24;
+
+    items.forEach((inq) => {
+      const row = sheet.addRow({
+        inquiryNumber: inq.inquiryNumber,
+        date: inq.date,
+        salesPerson: inq.salesPerson || inq.createdBy?.name || '-',
+        companyName: inq.customer?.companyName || '-',
+        contactPerson: inq.customer?.contactPerson || '-',
+        mobile: inq.customer?.mobile || '-',
+        siteLocation: inq.customer?.siteLocation || '-',
+        products: (inq.products || []).join(', '),
+        opportunity: inq.visit?.opportunity || '-',
+        dealStatus: inq.followUp?.dealStatus || 'Pending',
+        followUpDate: inq.followUp?.followUpDate || '-',
+        managerReview: inq.managerReview?.status || 'Pending',
+        requirementValue: inq.commercial?.requirementValue || '-',
+        expectedOrderValue: inq.commercial?.expectedOrderValue || '-'
+      });
+      row.alignment = { vertical: 'middle' };
+    });
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="POCIKA-Inquiries-Report-${dateStr}.xlsx"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     next(error);
   }

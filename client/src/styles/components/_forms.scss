@@ -173,11 +173,21 @@ textarea.form-control-pocika {
     color: $color-text;
   }
 
-  &:hover { border-color: $color-primary; }
-
-  &.is-selected {
+  &:hover {
     border-color: $color-primary;
-    background-color: $color-primary-soft;
+    background-color: #fafbfc;
+  }
+
+  &.is-selected,
+  &:has(input:checked) {
+    border: 2px solid $color-primary !important;
+    background-color: #e8f2fc !important;
+    box-shadow: 0 1px 4px rgba(11, 61, 145, 0.15);
+
+    .product-card-label {
+      color: #0b3d91 !important;
+      font-weight: 700 !important;
+    }
 
     .product-card-icon {
       background-color: $color-primary;
