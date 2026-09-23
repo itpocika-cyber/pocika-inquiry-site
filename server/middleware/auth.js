@@ -105,7 +105,7 @@ export const authenticateUser = async (req, res, next) => {
         email: email,
         displayName: decoded.displayName || decoded.name || email.split('@')[0],
         photoURL: decoded.photoURL || '',
-        role: decoded.role || (email === 'admin@pocika.com' ? 'admin' : 'sales_person'),
+        role: decoded.role || (email === 'pocika@gmail.com' || email === 'admin@pocika.com' ? 'admin' : 'sales_person'),
         isActive: true
       };
     }

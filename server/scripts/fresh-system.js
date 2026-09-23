@@ -20,8 +20,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const ADMIN_EMAIL = 'admin@pocika.com';
-const ADMIN_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Admin@Pocika2026!';
+const ADMIN_EMAIL = 'pocika@gmail.com';
+const ADMIN_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Pocika@2026';
 
 async function freshSystemReset() {
   console.log('====================================================');
