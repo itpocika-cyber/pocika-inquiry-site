@@ -15,6 +15,7 @@
     "seed:auth": "node server/scripts/seed-auth.js",
     "db:clean": "node server/scripts/clear-data.js",
     "db:reset": "node server/scripts/seed-auth.js && node server/scripts/seed.js",
+    "system:fresh": "node server/scripts/fresh-system.js",
     "test": "node --test server/tests/jwt-auth-rbac.test.js server/tests/cloudinary-media.test.js"
   },
   "devDependencies": {
