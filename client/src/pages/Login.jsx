@@ -58,11 +58,11 @@ export default function Login() {
   return (
     <div className="d-flex align-items-center justify-content-center min-vh-100 p-3" style={{ backgroundColor: 'var(--color-bg)' }}>
       <div className="card-pocika w-100 p-4 p-md-5" style={{ maxWidth: '440px' }}>
-        <div className="text-center mb-4">
+        <div className="text-center mb-4 d-flex flex-column align-items-center">
           <img
             src="/assets/logo/pocika-logo.png"
             alt="POCIKA"
-            style={{ width: '64px', height: '64px', objectFit: 'contain' }}
+            style={{ width: '64px', height: '64px', objectFit: 'contain', margin: '0 auto' }}
             className="mb-2"
           />
           <h1 className="text-page-title mb-1" style={{ fontSize: '1.5rem' }}>POCIKA</h1>
