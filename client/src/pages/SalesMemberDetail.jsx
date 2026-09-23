@@ -233,7 +233,7 @@ export default function SalesMemberDetail() {
                       width: '56px',
                       height: '56px',
                       fontSize: '1.25rem',
-                      background: member.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9'
+                      background: member.role === 'admin' ? 'var(--color-primary)' : 'var(--color-navy-light)'
                     }}
                   >
                     {(member.displayName || member.email).slice(0, 2).toUpperCase()}

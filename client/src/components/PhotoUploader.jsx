@@ -10,19 +10,6 @@ export default function PhotoUploader({
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [fetchingLocation, setFetchingLocation] = useState(false);
-
-  // Best-effort geolocation helper
-  const getCoordinates = () => {
-    return new Promise((resolve) => {
-      if (!navigator?.geolocation) return resolve(null);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        () => resolve(null),
-        { timeout: 3500, maximumAge: 60000 }
-      );
-    });
-  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -42,20 +29,12 @@ export default function PhotoUploader({
     }
   };
 
-  const handleCameraCapture = async (e) => {
+  const handleCameraCapture = (e) => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
       const files = Array.from(fileList);
       e.target.value = '';
-      setFetchingLocation(true);
-      try {
-        const coords = await getCoordinates();
-        setFetchingLocation(false);
-        onAddFiles(files, coords);
-      } catch {
-        setFetchingLocation(false);
-        onAddFiles(files, null);
-      }
+      onAddFiles(files);
     }
   };
 
@@ -145,13 +124,6 @@ export default function PhotoUploader({
         </div>
       </div>
 
-      {fetchingLocation && (
-        <div className="text-primary small mt-2 d-flex align-items-center gap-1">
-          <span className="spinner-border spinner-border-sm" role="status" style={{ width: '0.75rem', height: '0.75rem' }} />
-          <span>Recording GPS location for photo...</span>
-        </div>
-      )}
-
       {error && <div className="field-error is-visible mt-2">{error}</div>}
 
       <div className="photo-upload-counter mt-3 mb-2 d-flex justify-content-between align-items-center">
@@ -185,20 +157,11 @@ export default function PhotoUploader({
                 {photo.isUploading && (
                   <div
                     className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center"
-                    style={{ background: 'rgba(15, 23, 42, 0.65)', color: '#fff', zIndex: 2 }}
+                    style={{ background: 'rgba(15, 23, 42, 0.65)', color: 'var(--color-white)', zIndex: 2 }}
                   >
                     <div className="spinner-border spinner-border-sm text-light mb-1" role="status" />
                     <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>Uploading</span>
                   </div>
-                )}
-                {photo.latitude && (
-                  <span
-                    className="position-absolute start-0 top-0 m-1 badge bg-dark bg-opacity-75 text-white"
-                    style={{ fontSize: '0.6rem', padding: '2px 4px' }}
-                    title={`GPS: ${photo.latitude}, ${photo.longitude}`}
-                  >
-                    📍 Location saved
-                  </span>
                 )}
                 <span className="photo-thumb-size">{sizeText}</span>
                 <button

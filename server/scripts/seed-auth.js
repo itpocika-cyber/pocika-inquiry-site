@@ -17,7 +17,13 @@ async function seedAuthUsers() {
     await connectDB();
     console.log('Connected to MongoDB.');
 
-    // 1. Remove legacy demo dummy accounts
+    // 1. Remove legacy demo dummy accounts and drop faulty legacy index if present
+    try {
+      await User.collection.dropIndex('firebaseUid_1');
+    } catch (_) {
+      // index already dropped or not present
+    }
+
     const removedDemoUsers = await User.deleteMany({
       email: { $in: ['sales@pocika.com', 'manager@pocika.com'] }
     });

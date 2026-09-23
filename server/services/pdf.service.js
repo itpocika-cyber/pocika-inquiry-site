@@ -38,10 +38,16 @@ const cleanText = (val, fallback = '') => {
 
 const formatDateStr = (val) => {
   if (!val) return '';
-  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
     }
   }
   return String(val);
@@ -175,56 +181,80 @@ export const generateInquiryHtml = async (inquiry) => {
     const fields = [];
 
     const companyName = cleanVal(inquiry.customer?.companyName);
+    const gstNo = cleanVal(inquiry.customer?.gstNo);
     if (companyName) {
       fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Company / Client Name</div>
-          <div class="f-val f-val-company">${escapeHtml(companyName)}</div>
+        <div class="field-col-12 client-lead-row">
+          <div class="client-name">${escapeHtml(companyName)}</div>
+          ${gstNo ? `<div class="client-gst">GSTIN: <strong>${escapeHtml(gstNo)}</strong></div>` : ''}
         </div>
       `);
     }
 
     const contactPerson = cleanVal(inquiry.customer?.contactPerson);
-    if (contactPerson) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Contact Person</div>
-          <div class="f-val f-val-bold">${escapeHtml(contactPerson)}</div>
-        </div>
-      `);
-    }
-
     const designation = cleanVal(inquiry.customer?.designation);
-    if (designation) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Designation</div>
-          <div class="f-val">${escapeHtml(designation)}</div>
-        </div>
-      `);
-    }
-
     const mobile = cleanVal(inquiry.customer?.mobile);
-    if (mobile) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Mobile No.</div>
-          <div class="f-val f-val-bold">${escapeHtml(mobile)}</div>
-        </div>
-      `);
-    }
-
     const email = cleanVal(inquiry.customer?.email);
-    if (email) {
+
+    if (contactPerson || mobile || email) {
+      fields.push(`
+        <div class="field-col-12 sub-header-bar">
+          <span>Primary Contact Information</span>
+        </div>
+      `);
+      if (contactPerson) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Contact Person</div>
+            <div class="f-val f-val-contact">${escapeHtml(contactPerson)}${designation ? ` <span class="f-designation">(${escapeHtml(designation)})</span>` : ''}</div>
+          </div>
+        `);
+      }
+      if (mobile) {
+        fields.push(`
+          <div class="field-col-3">
+            <div class="f-label">Mobile Number</div>
+            <div class="f-val f-val-bold">${escapeHtml(mobile)}</div>
+          </div>
+        `);
+      }
+      if (email) {
+        fields.push(`
+          <div class="field-col-3">
+            <div class="f-label">Email Address</div>
+            <div class="f-val">${escapeHtml(email)}</div>
+          </div>
+        `);
+      }
+    }
+
+    const siteLocation = cleanVal(inquiry.customer?.siteLocation);
+    const billingAddress = cleanVal(inquiry.customer?.billingAddress);
+    const customerType = inquiry.business?.customerType === 'Retail/Other' && inquiry.business?.customerTypeOther
+      ? `Retail/Other (${inquiry.business.customerTypeOther})`
+      : cleanVal(inquiry.business?.customerType);
+    const facility = inquiry.business?.facility === 'Other' && inquiry.business?.facilityOther
+      ? `Other (${inquiry.business.facilityOther})`
+      : cleanVal(inquiry.business?.facility);
+    const locationGidc = cleanVal(inquiry.business?.locationGidc);
+    const status = cleanVal(inquiry.business?.status);
+    const expectedDate = formatDateStr(inquiry.business?.expectedDate);
+
+    fields.push(`
+      <div class="field-col-12 sub-header-bar" style="margin-top: 5px;">
+        <span>Site Location &amp; Project Profile</span>
+      </div>
+    `);
+
+    if (siteLocation) {
       fields.push(`
         <div class="field-col-6">
-          <div class="f-label">Email Address</div>
-          <div class="f-val">${escapeHtml(email)}</div>
+          <div class="f-label">Site / Visit Location</div>
+          <div class="f-val f-val-bold">${escapeHtml(siteLocation)}</div>
         </div>
       `);
     }
 
-    const billingAddress = cleanVal(inquiry.customer?.billingAddress);
     if (billingAddress) {
       fields.push(`
         <div class="field-col-6">
@@ -234,98 +264,47 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const siteLocation = cleanVal(inquiry.customer?.siteLocation);
-    if (siteLocation) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Site / Visit Location</div>
-          <div class="f-val">${escapeHtml(siteLocation)}</div>
-        </div>
-      `);
-    }
-
-    const gstNo = cleanVal(inquiry.customer?.gstNo);
-    if (gstNo) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">GST No.</div>
-          <div class="f-val">${escapeHtml(gstNo)}</div>
-        </div>
-      `);
-    }
-
-    const customerType = inquiry.business?.customerType === 'Retail/Other' && inquiry.business?.customerTypeOther
-      ? `Retail/Other (${inquiry.business.customerTypeOther})`
-      : cleanVal(inquiry.business?.customerType);
     if (customerType) {
       fields.push(`
-        <div class="field-col-6">
+        <div class="field-col-3">
           <div class="f-label">Customer Type</div>
           <div class="f-val">${escapeHtml(customerType)}</div>
         </div>
       `);
     }
 
-    const industryType = cleanVal(inquiry.business?.industryType);
-    if (industryType) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Industry / Business Type</div>
-          <div class="f-val">${escapeHtml(industryType)}</div>
-        </div>
-      `);
-    }
-
-    const facility = inquiry.business?.facility === 'Other' && inquiry.business?.facilityOther
-      ? `Other (${inquiry.business.facilityOther})`
-      : cleanVal(inquiry.business?.facility);
     if (facility) {
       fields.push(`
-        <div class="field-col-6">
+        <div class="field-col-3">
           <div class="f-label">Facility Type</div>
           <div class="f-val">${escapeHtml(facility)}</div>
         </div>
       `);
     }
 
-    const locationGidc = cleanVal(inquiry.business?.locationGidc);
     if (locationGidc) {
       fields.push(`
-        <div class="field-col-4">
+        <div class="field-col-3">
           <div class="f-label">Location / GIDC</div>
           <div class="f-val">${escapeHtml(locationGidc)}</div>
         </div>
       `);
     }
 
-    const status = cleanVal(inquiry.business?.status);
     if (status) {
       fields.push(`
-        <div class="field-col-4">
+        <div class="field-col-3">
           <div class="f-label">Site Status</div>
-          <div class="f-val">${escapeHtml(status)}</div>
+          <div class="f-val"><span class="badge-status-pill">${escapeHtml(status)}</span></div>
         </div>
       `);
     }
 
-    const areaParts = [];
-    if (inquiry.business?.areaSqft) areaParts.push(`${Number(inquiry.business.areaSqft).toLocaleString()} Sq.Ft.`);
-    if (inquiry.business?.floors) areaParts.push(`${inquiry.business.floors} Floors`);
-    if (areaParts.length > 0) {
-      fields.push(`
-        <div class="field-col-4">
-          <div class="f-label">Approx. Area / Floors</div>
-          <div class="f-val">${escapeHtml(areaParts.join('  /  '))}</div>
-        </div>
-      `);
-    }
-
-    const expectedDate = formatDateStr(inquiry.business?.expectedDate);
     if (expectedDate) {
       fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Expected Requirement / Commissioning Date</div>
-          <div class="f-val f-val-bold" style="color: #0369a1;">${escapeHtml(expectedDate)}</div>
+        <div class="field-col-3">
+          <div class="f-label">Expected Requirement Date</div>
+          <div class="f-val f-val-date">${escapeHtml(expectedDate)}</div>
         </div>
       `);
     }
@@ -333,7 +312,7 @@ export const generateInquiryHtml = async (inquiry) => {
     if (fields.length > 0) {
       candidateSections.push({
         title: 'Customer & Business Details',
-        headerRight: customerType ? `<span style="font-weight: 600; color: #475569; font-size: 7.5pt;">${escapeHtml(customerType)}</span>` : '',
+        headerRight: '',
         fieldsHtml: fields.join('')
       });
     }
@@ -345,67 +324,96 @@ export const generateInquiryHtml = async (inquiry) => {
   {
     const fields = [];
 
-    if (Array.isArray(inquiry.products) && inquiry.products.length > 0) {
-      const badges = inquiry.products.map(p => {
-        const name = (p === 'Other' && inquiry.productOther) ? `Other (${inquiry.productOther})` : p;
-        return `<span class="chip-badge chip-product">${escapeHtml(name)}</span>`;
-      }).join(' ');
-      fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Products Selected</div>
-          <div class="product-badges-wrap">${badges}</div>
-        </div>
-      `);
-    }
-
-    const productSpecification = cleanText(inquiry.requirement?.productSpecification);
-    if (productSpecification) {
-      fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Required Product / Specification / Size</div>
-          <div class="f-box">${escapeHtml(productSpecification)}</div>
-        </div>
-      `);
-    }
-
+    const products = Array.isArray(inquiry.products) ? inquiry.products.filter(Boolean) : [];
     const estimatedQuantity = cleanVal(inquiry.requirement?.estimatedQuantity);
-    if (estimatedQuantity) {
+    const renewalDueDate = formatDateStr(inquiry.requirement?.renewalDueDate);
+
+    if (products.length > 0 || estimatedQuantity || renewalDueDate) {
       fields.push(`
-        <div class="field-col-4">
-          <div class="f-label">Estimated Quantity</div>
-          <div class="f-val f-val-bold">${escapeHtml(estimatedQuantity)}</div>
+        <div class="field-col-12 sub-header-bar">
+          <span>Equipment &amp; Product Scope</span>
         </div>
       `);
+
+      if (products.length > 0) {
+        const badges = products.map(p => {
+          const name = (p === 'Other' && inquiry.productOther) ? `Other (${inquiry.productOther})` : p;
+          return `<span class="chip-badge chip-product">${escapeHtml(name)}</span>`;
+        }).join(' ');
+        fields.push(`
+          <div class="field-col-12">
+            <div class="f-label">Products Selected For Quotation</div>
+            <div class="product-badges-wrap">${badges}</div>
+          </div>
+        `);
+      }
+
+      if (estimatedQuantity) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Estimated Quantity Required</div>
+            <div class="f-val f-val-bold">${escapeHtml(estimatedQuantity)} Units</div>
+          </div>
+        `);
+      }
+
+      if (renewalDueDate) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">AMC / Refilling Due Date</div>
+            <div class="f-val f-val-date">${escapeHtml(renewalDueDate)}</div>
+          </div>
+        `);
+      }
     }
 
     const purchaseReason = cleanVal(inquiry.requirement?.reason);
-    if (purchaseReason) {
-      fields.push(`
-        <div class="field-col-4">
-          <div class="f-label">Purchase Reason</div>
-          <div class="f-val">${escapeHtml(purchaseReason)}</div>
-        </div>
-      `);
-    }
-
     const currentBrandVal = cleanVal(inquiry.requirement?.currentBrand);
-    if (currentBrandVal) {
-      fields.push(`
-        <div class="field-col-4">
-          <div class="f-label">Current Brand Used</div>
-          <div class="f-val">${escapeHtml(currentBrandVal)}</div>
-        </div>
-      `);
-    }
-
+    const productSpecification = cleanText(inquiry.requirement?.productSpecification);
     const currentPurchase = cleanText(inquiry.requirement?.currentPurchase);
-    if (currentPurchase) {
+
+    if (purchaseReason || currentBrandVal || productSpecification || currentPurchase) {
       fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Current Purchase / Existing Setup</div>
-          <div class="f-box">${escapeHtml(currentPurchase)}</div>
+        <div class="field-col-12 sub-header-bar" style="margin-top: 5px;">
+          <span>Technical Specifications &amp; Existing Setup</span>
         </div>
       `);
+
+      if (purchaseReason) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Purchase Reason</div>
+            <div class="f-val">${escapeHtml(purchaseReason)}</div>
+          </div>
+        `);
+      }
+
+      if (currentBrandVal) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Current Brand In Use</div>
+            <div class="f-val">${escapeHtml(currentBrandVal)}</div>
+          </div>
+        `);
+      }
+
+      if (productSpecification) {
+        fields.push(`
+          <div class="field-col-12">
+            <div class="f-label">Requirement / Technical Specifications</div>
+            <div class="f-box">${escapeHtml(productSpecification)}</div>
+          </div>
+        `);
+      }
+
+      if (currentPurchase) {
+        fields.push(`
+          <div class="field-col-12">
+            <div class="f-label">Current Purchase &amp; Existing Setup Notes</div>
+            <div class="f-box">${escapeHtml(currentPurchase)}</div>
+          </div>
+        `);
+      }
     }
 
     if (fields.length > 0) {
@@ -424,6 +432,16 @@ export const generateInquiryHtml = async (inquiry) => {
     const fields = [];
 
     const reqVal = formatCurrency(inquiry.commercial?.requirementValue);
+    const expVal = formatCurrency(inquiry.commercial?.expectedOrderValue);
+    const budget = cleanVal(inquiry.commercial?.budget);
+    const paymentTerms = cleanVal(inquiry.commercial?.paymentTerms);
+
+    fields.push(`
+      <div class="field-col-12 sub-header-bar">
+        <span>Order Valuation &amp; Commercial Terms</span>
+      </div>
+    `);
+
     if (reqVal) {
       fields.push(`
         <div class="field-col-6">
@@ -433,7 +451,6 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const expVal = formatCurrency(inquiry.commercial?.expectedOrderValue);
     if (expVal) {
       fields.push(`
         <div class="field-col-6">
@@ -443,7 +460,6 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const budget = cleanVal(inquiry.commercial?.budget);
     if (budget) {
       fields.push(`
         <div class="field-col-6">
@@ -453,11 +469,10 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const paymentTerms = cleanVal(inquiry.commercial?.paymentTerms);
     if (paymentTerms) {
       fields.push(`
         <div class="field-col-6">
-          <div class="f-label">Payment Terms</div>
+          <div class="f-label">Payment Terms Expected</div>
           <div class="f-val">${escapeHtml(paymentTerms)}</div>
         </div>
       `);
@@ -465,47 +480,56 @@ export const generateInquiryHtml = async (inquiry) => {
 
     let dmName = cleanVal(inquiry.commercial?.decisionMakerName);
     let dmRole = cleanVal(inquiry.commercial?.decisionRole || inquiry.commercial?.decisionMakerDesignation);
-    if (dmName && dmRole) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Decision Maker &amp; Role</div>
-          <div class="f-val">${escapeHtml(dmName)} (${escapeHtml(dmRole)})</div>
-        </div>
-      `);
-    } else if (dmName) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Decision Maker</div>
-          <div class="f-val">${escapeHtml(dmName)}</div>
-        </div>
-      `);
-    } else if (dmRole) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Decision Maker Role</div>
-          <div class="f-val">${escapeHtml(dmRole)}</div>
-        </div>
-      `);
-    }
-
     const purchaseDecisionBy = formatDateStr(inquiry.commercial?.purchaseDecisionBy) || cleanVal(inquiry.commercial?.purchaseDecisionBy);
-    if (purchaseDecisionBy) {
-      fields.push(`
-        <div class="field-col-6">
-          <div class="f-label">Purchase Decision Expected By</div>
-          <div class="f-val">${escapeHtml(purchaseDecisionBy)}</div>
-        </div>
-      `);
-    }
-
     const competitors = cleanVal(inquiry.commercial?.competitors);
-    if (competitors) {
+
+    if (dmName || dmRole || purchaseDecisionBy || competitors) {
       fields.push(`
-        <div class="field-col-12">
-          <div class="f-label">Competitor / Other Brands Considered</div>
-          <div class="f-val">${escapeHtml(competitors)}</div>
+        <div class="field-col-12 sub-header-bar" style="margin-top: 5px;">
+          <span>Decision Authority &amp; Market Intelligence</span>
         </div>
       `);
+
+      if (dmName && dmRole) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Decision Maker &amp; Role</div>
+            <div class="f-val">${escapeHtml(dmName)} (${escapeHtml(dmRole)})</div>
+          </div>
+        `);
+      } else if (dmName) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Decision Maker</div>
+            <div class="f-val">${escapeHtml(dmName)}</div>
+          </div>
+        `);
+      } else if (dmRole) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Decision Maker Role</div>
+            <div class="f-val">${escapeHtml(dmRole)}</div>
+          </div>
+        `);
+      }
+
+      if (purchaseDecisionBy) {
+        fields.push(`
+          <div class="field-col-6">
+            <div class="f-label">Purchase Decision Expected By</div>
+            <div class="f-val">${escapeHtml(purchaseDecisionBy)}</div>
+          </div>
+        `);
+      }
+
+      if (competitors) {
+        fields.push(`
+          <div class="field-col-12">
+            <div class="f-label">Competitor / Other Brands Considered</div>
+            <div class="f-val">${escapeHtml(competitors)}</div>
+          </div>
+        `);
+      }
     }
 
     if (fields.length > 0) {
@@ -524,6 +548,15 @@ export const generateInquiryHtml = async (inquiry) => {
     const fields = [];
 
     const visitType = cleanVal(inquiry.visit?.visitType);
+    const personMet = cleanVal(inquiry.visit?.personMet);
+    const opp = cleanVal(inquiry.visit?.opportunity);
+
+    fields.push(`
+      <div class="field-col-12 sub-header-bar">
+        <span>Site Visit Overview</span>
+      </div>
+    `);
+
     if (visitType) {
       fields.push(`
         <div class="field-col-4">
@@ -533,17 +566,15 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const personMet = cleanVal(inquiry.visit?.personMet);
     if (personMet) {
       fields.push(`
         <div class="field-col-4">
-          <div class="f-label">Person Met</div>
-          <div class="f-val">${escapeHtml(personMet)}</div>
+          <div class="f-label">Person Met at Site</div>
+          <div class="f-val f-val-bold">${escapeHtml(personMet)}</div>
         </div>
       `);
     }
 
-    const opp = cleanVal(inquiry.visit?.opportunity);
     if (opp) {
       const oppClass = opp.toLowerCase().replace(/[^a-z0-9]/g, '-');
       fields.push(`
@@ -557,8 +588,10 @@ export const generateInquiryHtml = async (inquiry) => {
     const requirementDiscussed = cleanText(inquiry.visit?.requirementDiscussed);
     if (requirementDiscussed) {
       fields.push(`
+        <div class="field-col-12 sub-header-bar" style="margin-top: 5px;">
+          <span>Key Discussion &amp; Site Observations</span>
+        </div>
         <div class="field-col-12">
-          <div class="f-label">Key Discussion &amp; Requirements Identified</div>
           <div class="f-box">${escapeHtml(requirementDiscussed)}</div>
         </div>
       `);
@@ -582,6 +615,16 @@ export const generateInquiryHtml = async (inquiry) => {
     const nextActions = Array.isArray(inquiry.followUp?.nextAction)
       ? inquiry.followUp.nextAction.filter(Boolean)
       : (inquiry.followUp?.nextAction ? [inquiry.followUp.nextAction] : []);
+    const quotationRequiredBy = formatDateStr(inquiry.followUp?.quotationDate);
+    const followUpDate = formatDateStr(inquiry.followUp?.followUpDate);
+    const nextVisitType = cleanVal(inquiry.followUp?.nextVisitType);
+
+    fields.push(`
+      <div class="field-col-12 sub-header-bar">
+        <span>Action Commitments &amp; Schedules</span>
+      </div>
+    `);
+
     if (nextActions.length > 0) {
       const badges = nextActions.map(a => `<span class="chip-badge chip-action">${escapeHtml(a)}</span>`).join(' ');
       fields.push(`
@@ -592,31 +635,28 @@ export const generateInquiryHtml = async (inquiry) => {
       `);
     }
 
-    const quotationRequiredBy = formatDateStr(inquiry.followUp?.quotationDate);
     if (quotationRequiredBy) {
       fields.push(`
         <div class="field-col-4">
           <div class="f-label">Quotation Required By</div>
-          <div class="f-val">${escapeHtml(quotationRequiredBy)}</div>
+          <div class="f-val f-val-bold">${escapeHtml(quotationRequiredBy)}</div>
         </div>
       `);
     }
 
-    const followUpDate = formatDateStr(inquiry.followUp?.followUpDate);
     if (followUpDate) {
       fields.push(`
         <div class="field-col-4">
-          <div class="f-label">Next Follow-up Date</div>
-          <div class="f-val f-val-bold" style="color: #0284c7;">${escapeHtml(followUpDate)}</div>
+          <div class="f-label">Next Planned Follow-Up</div>
+          <div class="f-val f-val-date">${escapeHtml(followUpDate)}</div>
         </div>
       `);
     }
 
-    const nextVisitType = cleanVal(inquiry.followUp?.nextVisitType);
     if (nextVisitType) {
       fields.push(`
         <div class="field-col-4">
-          <div class="f-label">Next Interaction Type</div>
+          <div class="f-label">Planned Interaction Mode</div>
           <div class="f-val">${escapeHtml(nextVisitType)}</div>
         </div>
       `);
@@ -625,8 +665,10 @@ export const generateInquiryHtml = async (inquiry) => {
     const nextActionCommitment = cleanText(inquiry.followUp?.nextActionCommitment);
     if (nextActionCommitment) {
       fields.push(`
+        <div class="field-col-12 sub-header-bar" style="margin-top: 5px;">
+          <span>Action Commitment Notes</span>
+        </div>
         <div class="field-col-12">
-          <div class="f-label">Next Action Commitment / Notes</div>
           <div class="f-box">${escapeHtml(nextActionCommitment)}</div>
         </div>
       `);
@@ -651,6 +693,9 @@ export const generateInquiryHtml = async (inquiry) => {
         title: 'Visit Remarks & Special Requirements',
         headerRight: '',
         fieldsHtml: `
+          <div class="field-col-12 sub-header-bar">
+            <span>Special Instructions &amp; Site Observations</span>
+          </div>
           <div class="field-col-12">
             <div class="f-box">${escapeHtml(rem)}</div>
           </div>
@@ -659,34 +704,21 @@ export const generateInquiryHtml = async (inquiry) => {
     }
   }
 
-  // ----------------------------------------------------
-  // SEQUENTIAL RENUMBERING (NO GAPS: 1, 2, 3...)
-  // ----------------------------------------------------
-  const sectionsHtml = candidateSections.map((sec, idx) => {
-    const sectionNum = idx + 1;
-    return `
-      <div class="section-card">
-        <div class="section-card-header">
-          <span>${sectionNum}. ${escapeHtml(sec.title)}</span>
-          ${sec.headerRight || ''}
-        </div>
-        <div class="section-card-body">
-          <div class="field-grid">
-            ${sec.fieldsHtml}
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('\n');
-
   // ==========================================
-  // Section: Site Photos (Unnumbered or Enriched)
+  // Section: Site Photos (Continuous Document Section)
   // ==========================================
-  let photosHtml = '';
   if (Array.isArray(inquiry.photos) && inquiry.photos.length > 0) {
+    const cleanPhotoCaption = (p, idx) => {
+      const cap = cleanVal(p.caption);
+      if (cap && !/^(whatsapp\s*image|img_|photo_|dsc_|\d{8}|\d{10})/i.test(cap) && !/\.(jpe?g|png|webp)$/i.test(cap)) {
+        return cap;
+      }
+      return `Site Photo #${String(idx + 1).padStart(2, '0')}`;
+    };
+
     const photoCards = await Promise.all(inquiry.photos.map(async (p, idx) => {
       const imgUrl = p.optimizedUrls?.pdf || p.optimizedUrls?.preview || p.secureUrl || p.url || p.previewUrl;
-      const caption = cleanVal(p.originalFileName || p.fileName || p.caption, `Site Photo ${idx + 1}`);
+      const caption = cleanPhotoCaption(p, idx);
       const dataUri = await resolveImageToDataUri(imgUrl);
 
       if (dataUri) {
@@ -716,17 +748,38 @@ export const generateInquiryHtml = async (inquiry) => {
       `;
     }));
 
-    photosHtml = `
-      <div class="section-card photo-section-card">
-        <div class="section-card-header">Site Photos (${inquiry.photos.length} Captured)</div>
-        <div class="section-card-body">
+    candidateSections.push({
+      title: 'Site Photos',
+      headerRight: `<span class="badge-status-pill">${inquiry.photos.length} Captured Photos</span>`,
+      fieldsHtml: `
+        <div class="field-col-12" style="padding: 0;">
           <div class="photos-grid">
             ${photoCards.join('')}
           </div>
         </div>
+      `
+    });
+  }
+
+  // ----------------------------------------------------
+  // SEQUENTIAL RENUMBERING (NO GAPS: 1, 2, 3...)
+  // ----------------------------------------------------
+  const sectionsHtml = candidateSections.map((sec, idx) => {
+    const sectionNum = idx + 1;
+    return `
+      <div class="section-card">
+        <div class="section-card-header">
+          <span>${sectionNum}. ${escapeHtml(sec.title)}</span>
+          ${sec.headerRight || ''}
+        </div>
+        <div class="section-card-body">
+          <div class="field-grid">
+            ${sec.fieldsHtml}
+          </div>
+        </div>
       </div>
     `;
-  }
+  }).join('\n');
 
   // Manager review extra info
   let managerReviewExtra = '';
@@ -737,13 +790,29 @@ export const generateInquiryHtml = async (inquiry) => {
     managerReviewExtra += ` — "${escapeHtml(inquiry.managerReview.remarks)}"`;
   }
 
+  // Deal Status Badge
+  const dealStatus = inquiry.followUp?.dealStatus || 'Pending';
+  const dealStatusClass = dealStatus === 'Won' ? 'won' : dealStatus === 'Lost' ? 'lost' : 'pending';
+  const dealStatusLabel = dealStatus === 'Won' ? '✓ Deal Won' : dealStatus === 'Lost' ? '✗ Deal Lost' : '⏳ Deal Pending';
+  const dealStatusBadge = `<span class="deal-badge deal-badge-${dealStatusClass}">${dealStatusLabel}</span>`;
+
+  // Opportunity Badge
+  const opp = cleanVal(inquiry.visit?.opportunity);
+  let oppBadge = '';
+  if (opp) {
+    const oppClass = opp.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    oppBadge = `<span class="badge-opp badge-opp-${oppClass}">${escapeHtml(opp)}</span>`;
+  }
+
   const replacements = {
     LOGO_DATA_URI: logoDataUri,
     INQUIRY_NUMBER: escapeHtml(inquiry.inquiryNumber || 'Draft'),
     DATE: escapeHtml(formatDateStr(inquiry.date)),
     SALES_PERSON: escapeHtml(inquiry.salesPerson || inquiry.createdBy?.name || 'Sales Representative'),
+    DEAL_STATUS_BADGE: dealStatusBadge,
+    OPPORTUNITY_BADGE: oppBadge,
     SECTIONS_CONTENT: sectionsHtml,
-    PHOTOS_SECTION: photosHtml,
+    PHOTOS_SECTION: '',
     MANAGER_STATUS: escapeHtml(inquiry.managerReview?.status || 'Pending Review'),
     MANAGER_REVIEW_EXTRA: managerReviewExtra
   };
@@ -756,13 +825,48 @@ export const generateInquiryHtml = async (inquiry) => {
 };
 
 /**
- * Generate PDF buffer using Puppeteer
+ * Generate PDF buffer using Puppeteer with repeated identical header
  */
 export const generateInquiryPdf = async (inquiry) => {
   let browser = null;
   try {
     const finalHtml = await generateInquiryHtml(inquiry);
+    const logoDataUri = await getLogoDataUri();
     const chromePath = findChromeExecutable();
+
+    const inqNum = escapeHtml(inquiry.inquiryNumber || 'Draft');
+    const inqDate = escapeHtml(formatDateStr(inquiry.date));
+    const inqSales = escapeHtml(inquiry.salesPerson || inquiry.createdBy?.name || 'Sales Representative');
+
+    const headerHtml = `
+      <div style="font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; -webkit-print-color-adjust: exact; width: 100%; padding: 0 10mm; box-sizing: border-box; font-size: 8pt;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 2px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <img src="${logoDataUri}" style="height: 28px; width: auto; max-width: 100px; object-fit: contain; display: block;" />
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 10.5pt; font-weight: 800; color: #A91D22; letter-spacing: 0.2px; line-height: 1.15;">POCIKA FIRE &amp; SAFETY PRODUCTS LLP</span>
+              <span style="font-size: 6.8pt; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 1px;">Inquiry &amp; Site Visit Report</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="display: inline-block; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 4px; padding: 1.5px 7px; font-size: 7.5pt; color: #334155;">
+              Inquiry No: <strong style="color: #0F172A; font-weight: 800;">${inqNum}</strong>
+            </div>
+            <div style="font-size: 7pt; color: #64748B; margin-top: 2px;">
+              Date: <strong style="color: #1E293B;">${inqDate}</strong> &nbsp;|&nbsp; Sales Person: <strong style="color: #1E293B;">${inqSales}</strong>
+            </div>
+          </div>
+        </div>
+        <div style="border-bottom: 2px solid #A91D22; width: 100%; margin-top: 2px;"></div>
+      </div>
+    `;
+
+    const footerHtml = `
+      <div style="font-size: 7pt; color: #64748B; width: 100%; display: flex; justify-content: space-between; padding: 0 10mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box;">
+        <span>POCIKA FIRE &amp; SAFETY PRODUCTS LLP &mdash; Confidential Document</span>
+        <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+      </div>
+    `;
 
     const launchOptions = {
       headless: true,
@@ -783,10 +887,10 @@ export const generateInquiryPdf = async (inquiry) => {
 
     browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
-    
-    await page.setContent(finalHtml, { 
-      waitUntil: 'load', 
-      timeout: 20000 
+
+    await page.setContent(finalHtml, {
+      waitUntil: 'load',
+      timeout: 20000
     });
     await page.evaluateHandle('document.fonts.ready');
 
@@ -794,18 +898,13 @@ export const generateInquiryPdf = async (inquiry) => {
       format: 'A4',
       printBackground: true,
       displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `
-        <div style="font-size: 7pt; color: #64748B; width: 100%; display: flex; justify-content: space-between; padding: 0 12mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <span>POCIKA FIRE &amp; SAFETY PRODUCTS LLP &mdash; Confidential Document</span>
-          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
-        </div>
-      `,
+      headerTemplate: headerHtml,
+      footerTemplate: footerHtml,
       margin: {
-        top: '8mm',
-        right: '12mm',
-        bottom: '10mm',
-        left: '12mm'
+        top: '22mm',
+        bottom: '11mm',
+        left: '10mm',
+        right: '10mm'
       }
     });
 

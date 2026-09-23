@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import { connectDB } from '../config/db.js';
 import { Inquiry } from '../models/Inquiry.js';
+import { Counter } from '../models/Counter.js';
 import { generateInquiryNumber } from '../services/inquiryNumber.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,9 +16,10 @@ async function seedSingleSampleInquiry() {
     await connectDB();
     console.log('Connected to MongoDB.');
 
-    // Clear legacy mock inquiries so database has exactly 1 clean template inquiry
-    console.log('Cleaning existing dummy inquiries...');
+    // Clear legacy mock inquiries and reset counter so numbering starts from 000001
+    console.log('Cleaning existing dummy inquiries and resetting sequence counters...');
     await Inquiry.deleteMany({});
+    await Counter.deleteMany({});
 
     // Generate authoritative inquiry number using the real atomic counter service
     const inquiryNumber = await generateInquiryNumber();

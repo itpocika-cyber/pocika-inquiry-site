@@ -21,15 +21,15 @@ export default function DesignSystem() {
           <h2 className="text-section-title mb-3">Color System</h2>
           <div className="row g-3">
             {[
-              { name: 'Navy (Brand)', hex: '#0B1F33', bg: 'var(--color-navy)', text: '#fff' },
-              { name: 'Primary Blue', hex: '#2563EB', bg: 'var(--color-primary)', text: '#fff' },
+              { name: 'Navy (Brand)', hex: 'var(--color-navy)', bg: 'var(--color-navy)', text: 'var(--color-white)' },
+              { name: 'Primary Blue', hex: '#2563EB', bg: 'var(--color-primary)', text: 'var(--color-white)' },
               { name: 'App Background', hex: '#F5F7FA', bg: 'var(--color-bg)', border: true },
-              { name: 'Card Surface', hex: '#FFFFFF', bg: 'var(--color-white)', border: true },
-              { name: 'Primary Text', hex: '#111827', bg: 'var(--color-text)', text: '#fff' },
-              { name: 'Muted Text', hex: '#6B7280', bg: 'var(--color-text-muted)', text: '#fff' },
-              { name: 'Success Green', hex: '#16A34A', bg: 'var(--color-success)', text: '#fff' },
-              { name: 'Warning Amber', hex: '#D97706', bg: 'var(--color-warning)', text: '#fff' },
-              { name: 'Danger Red', hex: '#DC2626', bg: 'var(--color-danger)', text: '#fff' }
+              { name: 'Card Surface', hex: 'var(--color-white)', bg: 'var(--color-white)', border: true },
+              { name: 'Primary Text', hex: '#111827', bg: 'var(--color-text)', text: 'var(--color-white)' },
+              { name: 'Muted Text', hex: '#6B7280', bg: 'var(--color-text-muted)', text: 'var(--color-white)' },
+              { name: 'Success Green', hex: '#16A34A', bg: 'var(--color-success)', text: 'var(--color-white)' },
+              { name: 'Warning Amber', hex: '#D97706', bg: 'var(--color-warning)', text: 'var(--color-white)' },
+              { name: 'Danger Red', hex: '#DC2626', bg: 'var(--color-danger)', text: 'var(--color-white)' }
             ].map((c, i) => (
               <div key={i} className="col-6 col-md-3">
                 <div

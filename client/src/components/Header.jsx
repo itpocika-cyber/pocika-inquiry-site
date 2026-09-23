@@ -183,7 +183,7 @@ export default function Header() {
         <div className="mobile-drawer-header">
           <div className="d-flex align-items-center gap-2">
             <img src="/assets/logo/pocika-logo.png" alt="POCIKA" style={{ height: '30px', width: 'auto' }} />
-            <span className="fw-bold" style={{ color: '#0B1F33', fontSize: '1.05rem', letterSpacing: '0.5px' }}>POCIKA</span>
+            <span className="fw-bold" style={{ color: 'var(--color-navy)', fontSize: '1.05rem', letterSpacing: '0.5px' }}>POCIKA</span>
           </div>
           <button
             type="button"

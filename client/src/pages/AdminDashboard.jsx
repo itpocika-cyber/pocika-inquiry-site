@@ -630,7 +630,7 @@ export default function AdminDashboard() {
                       <table className="table table-hover align-middle mb-0">
                         <thead
                           className="table-light"
-                          style={{ position: 'sticky', top: 0, zIndex: 2, backgroundColor: '#f8fafc' }}
+                          style={{ position: 'sticky', top: 0, zIndex: 2, backgroundColor: 'var(--color-bg)' }}
                         >
                           <tr>
                             <th>Inquiry No.</th>
@@ -943,7 +943,7 @@ export default function AdminDashboard() {
                 className={`card-pocika p-3 mb-3 d-flex justify-content-between align-items-center ${
                   renewalsOnly ? 'border-primary shadow-sm' : ''
                 }`}
-                style={{ cursor: 'pointer', background: renewalsOnly ? '#f0f7ff' : '#fff' }}
+                style={{ cursor: 'pointer', background: renewalsOnly ? 'var(--color-primary-soft)' : 'var(--color-white)' }}
                 onClick={() => {
                   setRenewalsOnly(!renewalsOnly);
                   setCurrentPage(1);
@@ -975,7 +975,7 @@ export default function AdminDashboard() {
                 className={`card-pocika p-3 mb-4 d-flex justify-content-between align-items-center ${
                   staleOnly ? 'border-danger shadow-sm' : ''
                 }`}
-                style={{ cursor: 'pointer', background: staleOnly ? '#fff5f5' : '#fff' }}
+                style={{ cursor: 'pointer', background: staleOnly ? 'var(--color-danger-soft)' : 'var(--color-white)' }}
                 onClick={() => {
                   setStaleOnly(!staleOnly);
                   setCurrentPage(1);

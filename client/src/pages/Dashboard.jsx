@@ -250,7 +250,7 @@ export default function Dashboard() {
                 <Link
                   to="/inquiries?renewalsDueInDays=30"
                   className="card-pocika p-3 d-flex justify-content-between align-items-center text-decoration-none text-dark border-primary"
-                  style={{ background: '#f0f7ff' }}
+                  style={{ background: 'var(--color-primary-soft)' }}
                 >
                   <div className="d-flex align-items-center gap-2">
                     <span className="fs-5">📅</span>
@@ -272,7 +272,7 @@ export default function Dashboard() {
                 <Link
                   to="/inquiries?isStale=true"
                   className="card-pocika p-3 d-flex justify-content-between align-items-center text-decoration-none text-dark border-danger"
-                  style={{ background: '#fff5f5' }}
+                  style={{ background: 'var(--color-danger-soft)' }}
                 >
                   <div className="d-flex align-items-center gap-2">
                     <span className="fs-5">⚠️</span>

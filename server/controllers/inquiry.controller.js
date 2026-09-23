@@ -289,97 +289,108 @@ export const updateInquiry = async (req, res, next) => {
       return errorResponse(res, { code: 'NOT_FOUND', message: 'Inquiry not found' }, 404);
     }
 
-    // Authorization check: Salesperson can only update their own inquiries
-    if (req.user.role === 'sales_person') {
-      const isOwner =
-        (inquiry.createdBy?.userId && inquiry.createdBy.userId === req.user.id) ||
-        (inquiry.createdBy?.firebaseUid && inquiry.createdBy.firebaseUid === req.user.firebaseUid) ||
-        (inquiry.createdBy?.email && inquiry.createdBy.email === req.user.email);
-      if (!isOwner) {
-        return errorResponse(res, {
-          code: 'FORBIDDEN',
-          message: 'Access denied. You do not have permission to modify this inquiry.'
-        }, 403);
-      }
+    // Authorization check: Only Admin, Super Admin, or Manager can edit submitted inquiries
+    if (!['admin', 'super_admin', 'manager'].includes(req.user.role)) {
+      return errorResponse(res, {
+        code: 'FORBIDDEN',
+        message: 'Access denied. Only administrators and managers can edit submitted inquiries.'
+      }, 403);
     }
 
     const updateData = {};
 
-    // Support both dot-notation and nested object structures
-    if (req.body['requirement.productSpecification'] !== undefined) {
-      updateData['requirement.productSpecification'] = req.body['requirement.productSpecification'];
-    } else if (req.body.requirement?.productSpecification !== undefined) {
-      updateData['requirement.productSpecification'] = req.body.requirement.productSpecification;
+    // 1. Customer Details
+    const customerFields = ['companyName', 'contactPerson', 'designation', 'mobile', 'email', 'gstNo', 'billingAddress', 'siteLocation'];
+    customerFields.forEach((field) => {
+      const dotKey = `customer.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        updateData[dotKey] = req.body[dotKey];
+      } else if (req.body.customer?.[field] !== undefined) {
+        updateData[dotKey] = req.body.customer[field];
+      }
+    });
+
+    // Update companyKey if companyName or mobile changed
+    const newCompName = updateData['customer.companyName'] !== undefined ? updateData['customer.companyName'] : inquiry.customer?.companyName;
+    const newMobile = updateData['customer.mobile'] !== undefined ? updateData['customer.mobile'] : inquiry.customer?.mobile;
+    if (updateData['customer.companyName'] !== undefined || updateData['customer.mobile'] !== undefined) {
+      updateData.companyKey = computeCompanyKey(newCompName, newMobile);
     }
 
-    if (req.body['requirement.estimatedQuantity'] !== undefined) {
-      updateData['requirement.estimatedQuantity'] = req.body['requirement.estimatedQuantity'];
-    } else if (req.body.requirement?.estimatedQuantity !== undefined) {
-      updateData['requirement.estimatedQuantity'] = req.body.requirement.estimatedQuantity;
+    // 2. Business Details
+    const businessFields = ['customerType', 'customerTypeOther', 'industryType', 'locationGidc', 'facility', 'facilityOther', 'status', 'areaSqFt', 'floors'];
+    businessFields.forEach((field) => {
+      const dotKey = `business.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        updateData[dotKey] = req.body[dotKey];
+      } else if (req.body.business?.[field] !== undefined) {
+        updateData[dotKey] = req.body.business[field];
+      }
+    });
+
+    // 3. Products
+    if (req.body.products !== undefined) {
+      updateData.products = Array.isArray(req.body.products) ? req.body.products : [req.body.products];
     }
 
-    // Phase 10.B: Renewal Due Date
-    if (req.body['requirement.renewalDueDate'] !== undefined) {
-      updateData['requirement.renewalDueDate'] = req.body['requirement.renewalDueDate'];
-    } else if (req.body.requirement?.renewalDueDate !== undefined) {
-      updateData['requirement.renewalDueDate'] = req.body.requirement.renewalDueDate;
-    }
+    // 4. Requirement Details
+    const requirementFields = ['productSpecification', 'estimatedQuantity', 'renewalDueDate', 'reason', 'currentPurchase', 'existingBrand'];
+    requirementFields.forEach((field) => {
+      const dotKey = `requirement.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        updateData[dotKey] = req.body[dotKey];
+      } else if (req.body.requirement?.[field] !== undefined) {
+        updateData[dotKey] = req.body.requirement[field];
+      }
+    });
 
-    // Phase 10.J: Commercial fields (supports brackets string or numbers)
-    if (req.body['commercial.expectedOrderValue'] !== undefined) {
-      updateData['commercial.expectedOrderValue'] = req.body['commercial.expectedOrderValue'];
-    } else if (req.body.commercial?.expectedOrderValue !== undefined) {
-      updateData['commercial.expectedOrderValue'] = req.body.commercial.expectedOrderValue;
-    }
+    // 5. Commercial Details
+    const commercialFields = ['expectedOrderValue', 'requirementValue', 'budget', 'paymentTerms', 'competitors', 'decisionMakerName', 'decisionMakerDesignation', 'decisionRole', 'purchaseDecisionBy'];
+    commercialFields.forEach((field) => {
+      const dotKey = `commercial.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        updateData[dotKey] = req.body[dotKey];
+      } else if (req.body.commercial?.[field] !== undefined) {
+        updateData[dotKey] = req.body.commercial[field];
+      }
+    });
 
-    if (req.body['commercial.requirementValue'] !== undefined) {
-      updateData['commercial.requirementValue'] = req.body['commercial.requirementValue'];
-    } else if (req.body.commercial?.requirementValue !== undefined) {
-      updateData['commercial.requirementValue'] = req.body.commercial.requirementValue;
-    }
+    // 6. Visit Details
+    const visitFields = ['visitType', 'personMet', 'requirementDiscussed', 'opportunity', 'photos'];
+    visitFields.forEach((field) => {
+      const dotKey = `visit.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        updateData[dotKey] = req.body[dotKey];
+      } else if (req.body.visit?.[field] !== undefined) {
+        updateData[dotKey] = req.body.visit[field];
+      }
+    });
 
-    if (req.body['commercial.budget'] !== undefined) {
-      updateData['commercial.budget'] = req.body['commercial.budget'];
-    } else if (req.body.commercial?.budget !== undefined) {
-      updateData['commercial.budget'] = req.body.commercial.budget;
-    }
+    // 7. Follow-up Details
+    const followUpFields = ['dealStatus', 'nextAction', 'quotationDate', 'nextVisitType', 'followUpDate', 'nextActionCommitment'];
+    followUpFields.forEach((field) => {
+      const dotKey = `followUp.${field}`;
+      if (req.body[dotKey] !== undefined) {
+        if (field === 'nextAction') {
+          updateData[dotKey] = Array.isArray(req.body[dotKey]) ? req.body[dotKey] : [req.body[dotKey]];
+        } else {
+          updateData[dotKey] = req.body[dotKey];
+        }
+      } else if (req.body.followUp?.[field] !== undefined) {
+        if (field === 'nextAction') {
+          updateData[dotKey] = Array.isArray(req.body.followUp[field]) ? req.body.followUp[field] : [req.body.followUp[field]];
+        } else {
+          updateData[dotKey] = req.body.followUp[field];
+        }
+      }
+    });
 
-    if (req.body['commercial.paymentTerms'] !== undefined) {
-      updateData['commercial.paymentTerms'] = req.body['commercial.paymentTerms'];
-    } else if (req.body.commercial?.paymentTerms !== undefined) {
-      updateData['commercial.paymentTerms'] = req.body.commercial.paymentTerms;
-    }
-
-    if (req.body['visit.opportunity'] !== undefined) {
-      updateData['visit.opportunity'] = req.body['visit.opportunity'];
-    } else if (req.body.visit?.opportunity !== undefined) {
-      updateData['visit.opportunity'] = req.body.visit.opportunity;
-    }
-
-    // Phase 10.C: Deal Status (Pending, Won, Lost)
-    if (req.body['followUp.dealStatus'] !== undefined) {
-      updateData['followUp.dealStatus'] = req.body['followUp.dealStatus'];
-    } else if (req.body.followUp?.dealStatus !== undefined) {
-      updateData['followUp.dealStatus'] = req.body.followUp.dealStatus;
-    }
-
-    if (req.body['followUp.nextAction'] !== undefined) {
-      updateData['followUp.nextAction'] = Array.isArray(req.body['followUp.nextAction']) ? req.body['followUp.nextAction'] : [req.body['followUp.nextAction']];
-    } else if (req.body.followUp?.nextAction !== undefined) {
-      updateData['followUp.nextAction'] = Array.isArray(req.body.followUp.nextAction) ? req.body.followUp.nextAction : [req.body.followUp.nextAction];
-    }
-
-    if (req.body['followUp.followUpDate'] !== undefined) {
-      updateData['followUp.followUpDate'] = req.body['followUp.followUpDate'];
-    } else if (req.body.followUp?.followUpDate !== undefined) {
-      updateData['followUp.followUpDate'] = req.body.followUp.followUpDate;
-    }
-
+    // 8. Remarks
     if (req.body.remarks !== undefined) {
       updateData.remarks = req.body.remarks;
     }
 
-    // Manager Review: Admin, super_admin, or manager
+    // 9. Manager Review
     if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
       if (req.body.status !== undefined) {
         updateData.status = req.body.status;
@@ -388,16 +399,32 @@ export const updateInquiry = async (req, res, next) => {
         updateData.managerReview = {
           ...inquiry.managerReview?.toObject(),
           ...req.body.managerReview,
-          reviewedBy: req.user.displayName || req.user.email,
+          reviewedBy: req.user.displayName || req.user.name || req.user.email,
           reviewedAt: new Date()
         };
       }
     }
 
+    // Auto-log audit comment
+    const auditComment = {
+      commentId: crypto.randomUUID(),
+      text: `Inquiry details updated by ${req.user.displayName || req.user.name || req.user.email} (${req.user.role}).`,
+      author: {
+        userId: req.user.id || '',
+        name: req.user.displayName || req.user.name || 'Admin',
+        email: req.user.email,
+        role: req.user.role
+      },
+      createdAt: new Date()
+    };
+
     const updatedInquiry = await Inquiry.findByIdAndUpdate(
       inquiry._id,
-      { $set: updateData },
-      { new: true, returnDocument: 'after', runValidators: true }
+      {
+        $set: updateData,
+        $push: { comments: auditComment }
+      },
+      { new: true, returnDocument: 'after', runValidators: false }
     );
 
     return successResponse(res, updatedInquiry);

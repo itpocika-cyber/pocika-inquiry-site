@@ -9,7 +9,7 @@ export function EmptyState({
   onAction
 }) {
   return (
-    <div className="card text-center p-5 my-4 border-0 shadow-sm" style={{ background: '#FFFFFF', borderRadius: '12px' }}>
+    <div className="card text-center p-5 my-4 border-0 shadow-sm" style={{ background: 'var(--color-white)', borderRadius: '12px' }}>
       <div className="d-flex justify-content-center mb-3">
         <div className="p-3 rounded-circle bg-light text-primary">
           <Icon size={36} />

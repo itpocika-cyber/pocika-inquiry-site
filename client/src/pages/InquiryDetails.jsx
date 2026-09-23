@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import api from '../api/client';
 import { inquiryApi } from '../api/inquiryApi';
+import uploadApi from '../api/uploadApi';
 import { useAuthStore } from '../store/authStore';
 import { markInquiryAsViewed } from '../utils/notificationTracker';
 
@@ -17,29 +18,65 @@ const rupeeBrackets = [
   '₹10,00,000+'
 ];
 
+const standardProducts = [
+  'ABC Fire Extinguisher',
+  'CO2 Fire Extinguisher',
+  'DCP/Other Extinguishers',
+  'Fire Alarm & Detection',
+  'Fire Hydrant',
+  'Hose Reel/Hose',
+  'Fire Pump/Accessories',
+  'PPE/Safety Products',
+  'Emergency/Safety Equipment',
+  'AMC/Refilling/Maintenance',
+  'Other'
+];
+
 export default function InquiryDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const canEdit = ['admin', 'super_admin', 'manager'].includes(user?.role);
 
   const [inquiry, setInquiry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Deal Status quick update
-  const [updatingDealStatus, setUpdatingDealStatus] = useState(false);
-
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
+  const [activeEditTab, setActiveEditTab] = useState('customer');
   const [editForm, setEditForm] = useState({
+    companyName: '',
+    contactPerson: '',
+    designation: '',
+    mobile: '',
+    email: '',
+    gstNo: '',
+    billingAddress: '',
+    siteLocation: '',
+    customerType: '',
+    facility: '',
+    status: '',
+    products: [],
     productSpecification: '',
+    estimatedQuantity: '',
+    renewalDueDate: '',
     requirementValue: '',
     expectedOrderValue: '',
+    budget: '',
+    paymentTerms: '',
     opportunity: '',
+    dealStatus: 'Pending',
     followUpDate: '',
+    quotationDate: '',
+    nextAction: [],
+    nextVisitType: '',
+    nextActionCommitment: '',
     remarks: ''
   });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [isCustomEditReqValue, setIsCustomEditReqValue] = useState(false);
+  const [isCustomEditExpValue, setIsCustomEditExpValue] = useState(false);
 
   // Lightbox State (index into inquiry.photos)
   const [activePhotoIdx, setActivePhotoIdx] = useState(null);
@@ -63,6 +100,43 @@ export default function InquiryDetails() {
   const [reviewRemarks, setReviewRemarks] = useState('');
   const [savingReview, setSavingReview] = useState(false);
 
+  const populateEditForm = (data) => {
+    const reqVal = data.commercial?.requirementValue || '';
+    const expVal = data.commercial?.expectedOrderValue || '';
+    setEditForm({
+      companyName: data.customer?.companyName || '',
+      contactPerson: data.customer?.contactPerson || '',
+      designation: data.customer?.designation || '',
+      mobile: data.customer?.mobile || '',
+      email: data.customer?.email || '',
+      gstNo: data.customer?.gstNo || '',
+      billingAddress: data.customer?.billingAddress || '',
+      siteLocation: data.customer?.siteLocation || '',
+      customerType: data.business?.customerType || '',
+      facility: data.business?.facility || '',
+      status: data.business?.status || '',
+      products: Array.isArray(data.products) ? [...data.products] : [],
+      productSpecification: data.requirement?.productSpecification || '',
+      estimatedQuantity: data.requirement?.estimatedQuantity || '',
+      renewalDueDate: data.requirement?.renewalDueDate || '',
+      requirementValue: reqVal,
+      expectedOrderValue: expVal,
+      budget: data.commercial?.budget || '',
+      paymentTerms: data.commercial?.paymentTerms || '',
+      opportunity: data.visit?.opportunity || 'WARM',
+      dealStatus: data.followUp?.dealStatus || 'Pending',
+      followUpDate: data.followUp?.followUpDate || '',
+      quotationDate: data.followUp?.quotationDate || '',
+      nextAction: Array.isArray(data.followUp?.nextAction) ? [...data.followUp.nextAction] : [],
+      nextVisitType: data.followUp?.nextVisitType || 'Follow-up',
+      nextActionCommitment: data.followUp?.nextActionCommitment || '',
+      remarks: data.remarks || ''
+    });
+    setIsCustomEditReqValue(Boolean(reqVal && !rupeeBrackets.includes(reqVal)));
+    setIsCustomEditExpValue(Boolean(expVal && !rupeeBrackets.includes(expVal)));
+    setActiveEditTab('customer');
+  };
+
   const fetchDetails = async () => {
     setLoading(true);
     try {
@@ -70,14 +144,7 @@ export default function InquiryDetails() {
       if (res.data) {
         setInquiry(res.data);
         markInquiryAsViewed(res.data._id, res.data.inquiryNumber);
-        setEditForm({
-          productSpecification: res.data.requirement?.productSpecification || '',
-          requirementValue: res.data.commercial?.requirementValue || '',
-          expectedOrderValue: res.data.commercial?.expectedOrderValue || '',
-          opportunity: res.data.visit?.opportunity || '',
-          followUpDate: res.data.followUp?.followUpDate || '',
-          remarks: res.data.remarks || ''
-        });
+        populateEditForm(res.data);
         setReviewStatus(res.data.managerReview?.status || 'Reviewed');
         setReviewRemarks(res.data.managerReview?.remarks || '');
       }
@@ -154,36 +221,60 @@ export default function InquiryDetails() {
     }
   };
 
-  const handleUpdateDealStatus = async (newStatus) => {
-    if (!inquiry) return;
-    setUpdatingDealStatus(true);
-    try {
-      const targetId = inquiry._id || inquiry.inquiryNumber;
-      const res = await api.patch(`/inquiries/${targetId}`, {
-        'followUp.dealStatus': newStatus
-      });
-      setInquiry(res.data);
-    } catch (err) {
-      alert(`Failed to update deal status: ${err.message}`);
-    } finally {
-      setUpdatingDealStatus(false);
-    }
-  };
-
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     setSavingEdit(true);
     try {
       const payload = {
-        'requirement.productSpecification': editForm.productSpecification,
-        'commercial.requirementValue': editForm.requirementValue || null,
-        'commercial.expectedOrderValue': editForm.expectedOrderValue || null,
-        'visit.opportunity': editForm.opportunity,
-        'followUp.followUpDate': editForm.followUpDate,
+        customer: {
+          ...(inquiry.customer || {}),
+          companyName: editForm.companyName,
+          contactPerson: editForm.contactPerson,
+          designation: editForm.designation,
+          mobile: editForm.mobile,
+          email: editForm.email,
+          gstNo: editForm.gstNo,
+          billingAddress: editForm.billingAddress,
+          siteLocation: editForm.siteLocation
+        },
+        business: {
+          ...(inquiry.business || {}),
+          customerType: editForm.customerType,
+          facility: editForm.facility,
+          status: editForm.status
+        },
+        products: editForm.products,
+        requirement: {
+          ...(inquiry.requirement || {}),
+          productSpecification: editForm.productSpecification,
+          estimatedQuantity: editForm.estimatedQuantity,
+          renewalDueDate: editForm.renewalDueDate || null
+        },
+        commercial: {
+          ...(inquiry.commercial || {}),
+          requirementValue: editForm.requirementValue || null,
+          expectedOrderValue: editForm.expectedOrderValue || null,
+          budget: editForm.budget,
+          paymentTerms: editForm.paymentTerms
+        },
+        visit: {
+          ...(inquiry.visit || {}),
+          opportunity: editForm.opportunity
+        },
+        followUp: {
+          ...(inquiry.followUp || {}),
+          dealStatus: editForm.dealStatus,
+          followUpDate: editForm.followUpDate,
+          quotationDate: editForm.quotationDate || null,
+          nextAction: editForm.nextAction,
+          nextVisitType: editForm.nextVisitType,
+          nextActionCommitment: editForm.nextActionCommitment
+        },
         remarks: editForm.remarks
       };
 
-      const res = await api.patch(`/inquiries/${inquiry._id || inquiry.inquiryNumber}`, payload);
+      const targetId = inquiry._id || inquiry.inquiryNumber;
+      const res = await api.patch(`/inquiries/${targetId}`, payload);
       setInquiry(res.data);
       setShowEditModal(false);
     } catch (err) {
@@ -243,11 +334,12 @@ export default function InquiryDetails() {
     setUploadingPhotos(true);
     try {
       const res = await uploadApi.uploadPhotos(inquiry._id || inquiry.inquiryNumber, formData);
-      if (res.data?.photos) {
-        setInquiry({ ...inquiry, photos: res.data.photos });
+      const updatedPhotos = res?.data?.photos || res?.photos;
+      if (updatedPhotos) {
+        setInquiry((prev) => ({ ...prev, photos: updatedPhotos }));
       }
     } catch (err) {
-      alert(`Photo upload failed: ${err.message}`);
+      alert(`Photo upload failed: ${err.response?.data?.error?.message || err.message}`);
     } finally {
       setUploadingPhotos(false);
       if (photoFileInputRef.current) photoFileInputRef.current.value = '';
@@ -331,66 +423,42 @@ export default function InquiryDetails() {
             >
               &larr; Back to Inquiries
             </Link>
-            <h1 className="text-page-title mb-1">
-              Inquiry: {inquiry.inquiryNumber}
-            </h1>
+            <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+              <h1 className="text-page-title mb-0">
+                Inquiry: {inquiry.inquiryNumber}
+              </h1>
+              <span
+                className={`badge px-2 py-1 ${
+                  currentDealStatus === 'Won'
+                    ? 'bg-success text-white'
+                    : currentDealStatus === 'Lost'
+                    ? 'bg-danger text-white'
+                    : 'bg-warning text-dark'
+                }`}
+                style={{ fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px' }}
+              >
+                {currentDealStatus === 'Won' ? '✓ Deal Won' : currentDealStatus === 'Lost' ? '✗ Deal Lost' : '⏳ Deal Pending'}
+              </span>
+            </div>
             <p className="text-muted-custom mb-0">
               Recorded on {formatDate(inquiry.date)} by {inquiry.salesPerson || inquiry.createdBy?.name || 'Sales Representative'}
             </p>
           </div>
 
           <div className="d-flex flex-wrap align-items-center gap-2">
-            {/* Quotation -> Order Conversion Deal Status Selector */}
-            <div className="d-inline-flex align-items-center gap-1 bg-white border p-1 rounded-3">
-              <span className="text-muted small px-2 fw-medium">Deal Status:</span>
-              <button
-                type="button"
-                className={`btn btn-sm py-1 px-2 ${
-                  currentDealStatus === 'Pending'
-                    ? 'btn-warning text-dark fw-bold'
-                    : 'btn-light text-secondary'
-                }`}
-                style={{ fontSize: '0.78rem' }}
-                disabled={updatingDealStatus}
-                onClick={() => handleUpdateDealStatus('Pending')}
-              >
-                ⏳ Pending
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm py-1 px-2 ${
-                  currentDealStatus === 'Won'
-                    ? 'btn-success text-white fw-bold'
-                    : 'btn-light text-secondary'
-                }`}
-                style={{ fontSize: '0.78rem' }}
-                disabled={updatingDealStatus}
-                onClick={() => handleUpdateDealStatus('Won')}
-              >
-                ✓ Won
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm py-1 px-2 ${
-                  currentDealStatus === 'Lost'
-                    ? 'btn-danger text-white fw-bold'
-                    : 'btn-light text-secondary'
-                }`}
-                style={{ fontSize: '0.78rem' }}
-                disabled={updatingDealStatus}
-                onClick={() => handleUpdateDealStatus('Lost')}
-              >
-                ✗ Lost
-              </button>
-            </div>
 
-            <button
-              type="button"
-              className="btn-pocika btn-pocika-secondary"
-              onClick={() => setShowEditModal(true)}
-            >
-              Edit Inquiry
-            </button>
+            {canEdit && (
+              <button
+                type="button"
+                className="btn-pocika btn-pocika-secondary"
+                onClick={() => {
+                  populateEditForm(inquiry);
+                  setShowEditModal(true);
+                }}
+              >
+                Edit Inquiry
+              </button>
+            )}
             <button
               type="button"
               className="btn-pocika btn-pocika-ghost"
@@ -492,8 +560,21 @@ export default function InquiryDetails() {
                   <div>{inquiry.business?.areaSqft ? `${inquiry.business.areaSqft} Sq.Ft.` : '-'}</div>
                 </div>
                 <div className="col-sm-6">
+                  <div className="text-helper">Floors / Basement</div>
+                  <div>
+                    {[
+                      inquiry.business?.floors ? `${inquiry.business.floors} Floors` : null,
+                      inquiry.business?.basement && inquiry.business.basement !== 'None' ? inquiry.business.basement : null
+                    ].filter(Boolean).join(' + ') || '-'}
+                  </div>
+                </div>
+                <div className="col-sm-6">
                   <div className="text-helper">Facility Status</div>
                   <div>{inquiry.business?.status || '-'}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="text-helper">Expected Requirement Date</div>
+                  <div>{inquiry.business?.expectedDate || '-'}</div>
                 </div>
               </div>
             </div>
@@ -550,7 +631,7 @@ export default function InquiryDetails() {
               </h2>
               <div className="row g-3">
                 <div className="col-sm-6">
-                  <div className="text-helper">Approx. Requirement Value</div>
+                  <div className="text-helper">Approx. Order Value</div>
                   <div className="fw-semibold">
                     {formatCurrency(inquiry.commercial?.requirementValue)}
                   </div>
@@ -886,127 +967,550 @@ export default function InquiryDetails() {
 
       <Footer />
 
-      {/* Edit Modal */}
+      {/* Multi-Tab Full Edit Modal for Admin / Manager */}
       {showEditModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content" style={{ borderRadius: 'var(--radius-lg)' }}>
-              <div className="modal-header border-bottom">
-                <h3 className="modal-title fs-5 fw-bold">Edit Inquiry</h3>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowEditModal(false)}
-                ></button>
-              </div>
-              <form onSubmit={handleSaveEdit}>
-                <div className="modal-body p-4">
-                  <div className="row g-3">
-                    <div className="col-12">
-                      <label className="field-label">Requirement / Specifications</label>
-                      <textarea
-                        className="form-control-pocika"
-                        rows="3"
-                        value={editForm.productSpecification}
-                        onChange={(e) => setEditForm({ ...editForm, productSpecification: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="field-label mb-1">Approx. Requirement Value (₹)</label>
-                      <div className="d-flex flex-wrap gap-1 mb-1">
-                        {rupeeBrackets.map((b) => (
-                          <button
-                            key={b}
-                            type="button"
-                            className={`btn btn-sm ${editForm.requirementValue === b ? 'btn-primary' : 'btn-outline-secondary'}`}
-                            style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '12px' }}
-                            onClick={() => setEditForm({ ...editForm, requirementValue: b })}
-                          >
-                            {b}
-                          </button>
-                        ))}
-                      </div>
-                      <input
-                        type="text"
-                        className="form-control-pocika"
-                        value={editForm.requirementValue}
-                        onChange={(e) => setEditForm({ ...editForm, requirementValue: e.target.value })}
-                        placeholder="Bracket or number (e.g. 250000)"
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="field-label mb-1">Expected Order Value (₹)</label>
-                      <div className="d-flex flex-wrap gap-1 mb-1">
-                        {rupeeBrackets.map((b) => (
-                          <button
-                            key={b}
-                            type="button"
-                            className={`btn btn-sm ${editForm.expectedOrderValue === b ? 'btn-primary' : 'btn-outline-secondary'}`}
-                            style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '12px' }}
-                            onClick={() => setEditForm({ ...editForm, expectedOrderValue: b })}
-                          >
-                            {b}
-                          </button>
-                        ))}
-                      </div>
-                      <input
-                        type="text"
-                        className="form-control-pocika"
-                        value={editForm.expectedOrderValue}
-                        onChange={(e) => setEditForm({ ...editForm, expectedOrderValue: e.target.value })}
-                        placeholder="Bracket or number (e.g. 200000)"
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="field-label">Opportunity Rating</label>
-                      <select
-                        className="form-control-pocika"
-                        value={editForm.opportunity}
-                        onChange={(e) => setEditForm({ ...editForm, opportunity: e.target.value })}
-                      >
-                        <option value="HOT">HOT</option>
-                        <option value="WARM">WARM</option>
-                        <option value="COLD">COLD</option>
-                        <option value="FUTURE POTENTIAL">FUTURE POTENTIAL</option>
-                        <option value="DEALER DEVELOPMENT">DEALER DEVELOPMENT</option>
-                        <option value="NO REQUIREMENT">NO REQUIREMENT</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="field-label">Next Follow-up Date</label>
-                      <input
-                        type="date"
-                        className="form-control-pocika"
-                        value={editForm.followUpDate}
-                        onChange={(e) => setEditForm({ ...editForm, followUpDate: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-12">
-                      <label className="field-label">Visit Remarks / Notes</label>
-                      <textarea
-                        className="form-control-pocika"
-                        rows="2"
-                        value={editForm.remarks}
-                        onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
-                      />
-                    </div>
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered modal-xl">
+            <div className="modal-content shadow border-0" style={{ borderRadius: 'var(--radius-lg)' }}>
+              <div className="modal-header border-bottom flex-column align-items-stretch pb-0">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h3 className="modal-title fs-5 fw-bold m-0">Edit Inquiry ({inquiry.inquiryNumber})</h3>
+                    <span className="text-muted small">Admin / Manager Master Edit Mode</span>
                   </div>
-                </div>
-                <div className="modal-footer border-top">
                   <button
                     type="button"
-                    className="btn-pocika btn-pocika-secondary"
+                    className="btn-close"
                     onClick={() => setShowEditModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-pocika btn-pocika-primary"
-                    disabled={savingEdit}
-                  >
-                    {savingEdit ? 'Saving...' : 'Save Changes'}
-                  </button>
+                    aria-label="Close"
+                  ></button>
+                </div>
+
+                <ul className="nav nav-tabs border-0 gap-1" role="tablist">
+                  <li className="nav-item">
+                    <button
+                      type="button"
+                      className={`nav-link py-2 px-3 fw-semibold ${activeEditTab === 'customer' ? 'active text-primary' : 'text-muted'}`}
+                      onClick={() => setActiveEditTab('customer')}
+                    >
+                      👤 Customer & Site
+                    </button>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      type="button"
+                      className={`nav-link py-2 px-3 fw-semibold ${activeEditTab === 'products' ? 'active text-primary' : 'text-muted'}`}
+                      onClick={() => setActiveEditTab('products')}
+                    >
+                      📦 Products & Scope
+                    </button>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      type="button"
+                      className={`nav-link py-2 px-3 fw-semibold ${activeEditTab === 'commercial' ? 'active text-primary' : 'text-muted'}`}
+                      onClick={() => setActiveEditTab('commercial')}
+                    >
+                      💰 Commercial & Deal
+                    </button>
+                  </li>
+                  <li className="nav-item">
+                    <button
+                      type="button"
+                      className={`nav-link py-2 px-3 fw-semibold ${activeEditTab === 'followup' ? 'active text-primary' : 'text-muted'}`}
+                      onClick={() => setActiveEditTab('followup')}
+                    >
+                      📅 Follow-up & Notes
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <form onSubmit={handleSaveEdit}>
+                <div className="modal-body p-4" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                  {/* TAB 1: Customer & Site */}
+                  {activeEditTab === 'customer' && (
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Company / Client Name *</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.companyName}
+                          onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Contact Person *</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.contactPerson}
+                          onChange={(e) => setEditForm({ ...editForm, contactPerson: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Designation</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.designation}
+                          onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Mobile No. *</label>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
+                          className="form-control-pocika"
+                          value={editForm.mobile}
+                          onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value.replace(/\D/g, '') })}
+                          required
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Email</label>
+                        <input
+                          type="email"
+                          className="form-control-pocika"
+                          value={editForm.email}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">GST No.</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.gstNo}
+                          onChange={(e) => setEditForm({ ...editForm, gstNo: e.target.value.toUpperCase() })}
+                          placeholder="24AAAAA0000A1Z5"
+                        />
+                      </div>
+                      <div className="col-md-8">
+                        <label className="field-label mb-1">Site / Visit Location *</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.siteLocation}
+                          onChange={(e) => setEditForm({ ...editForm, siteLocation: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="col-12">
+                        <label className="field-label mb-1">Company / Billing Address</label>
+                        <textarea
+                          rows="2"
+                          className="form-control-pocika"
+                          value={editForm.billingAddress}
+                          onChange={(e) => setEditForm({ ...editForm, billingAddress: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: Products & Scope */}
+                  {activeEditTab === 'products' && (
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Customer Type</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.customerType}
+                          onChange={(e) => setEditForm({ ...editForm, customerType: e.target.value })}
+                        >
+                          <option value="">Select Customer Type...</option>
+                          <option value="GIDC/Industrial">GIDC/Industrial</option>
+                          <option value="Developer/Builder">Developer/Builder</option>
+                          <option value="Corporate">Corporate</option>
+                          <option value="Commercial">Commercial</option>
+                          <option value="Dealer/Distributor">Dealer/Distributor</option>
+                          <option value="Consultant">Consultant</option>
+                          <option value="Retail/Other">Retail/Other</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Facility Type</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.facility}
+                          onChange={(e) => setEditForm({ ...editForm, facility: e.target.value })}
+                        >
+                          <option value="">Select Facility...</option>
+                          <option value="Factory">Factory</option>
+                          <option value="Warehouse">Warehouse</option>
+                          <option value="Commercial Site">Commercial Site</option>
+                          <option value="Residential Project">Residential Project</option>
+                          <option value="Office">Office</option>
+                          <option value="Hospital">Hospital</option>
+                          <option value="Hotel">Hotel</option>
+                          <option value="School/Institution">School/Institution</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="field-label mb-1">Site Status</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.status}
+                          onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        >
+                          <option value="">Select Status...</option>
+                          <option value="New">New</option>
+                          <option value="Existing">Existing</option>
+                          <option value="Under Construction">Under Construction</option>
+                          <option value="Expansion/Modification">Expansion/Modification</option>
+                        </select>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-2">Products / Quotation Needed (Add-on or remove products)</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {standardProducts.map((p) => {
+                            const isChecked = editForm.products?.includes(p);
+                            return (
+                              <button
+                                key={p}
+                                type="button"
+                                className={`btn btn-sm ${isChecked ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+                                style={{ fontSize: '0.8rem', borderRadius: '18px', padding: '4px 12px' }}
+                                onClick={() => {
+                                  const updated = isChecked
+                                    ? editForm.products.filter((item) => item !== p)
+                                    : [...(editForm.products || []), p];
+                                  setEditForm({ ...editForm, products: updated });
+                                }}
+                              >
+                                {isChecked && <span className="me-1">✓</span>}
+                                {p}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-1">Requirement / Specifications</label>
+                        <textarea
+                          className="form-control-pocika"
+                          rows="3"
+                          value={editForm.productSpecification}
+                          onChange={(e) => setEditForm({ ...editForm, productSpecification: e.target.value })}
+                          placeholder="Technical models, quantities per location, or specific product codes..."
+                        />
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Estimated Quantity (Units)</label>
+                        <input
+                          type="number"
+                          className="form-control-pocika"
+                          value={editForm.estimatedQuantity}
+                          onChange={(e) => setEditForm({ ...editForm, estimatedQuantity: e.target.value })}
+                          placeholder="e.g. 25"
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">AMC / Refilling Due Date</label>
+                        <input
+                          type="date"
+                          className="form-control-pocika"
+                          value={editForm.renewalDueDate}
+                          onChange={(e) => setEditForm({ ...editForm, renewalDueDate: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: Commercial & Deal */}
+                  {activeEditTab === 'commercial' && (
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label className="field-label mb-2">Deal Status</label>
+                        <div className="d-flex gap-2">
+                          {[
+                            { val: 'Pending', label: '⏳ Pending', cls: 'btn-outline-warning text-dark' },
+                            { val: 'Won', label: '✓ Won (Closed Order)', cls: 'btn-outline-success' },
+                            { val: 'Lost', label: '✗ Lost (Deal Closed)', cls: 'btn-outline-danger' }
+                          ].map((st) => (
+                            <button
+                              key={st.val}
+                              type="button"
+                              className={`btn py-2 px-3 fw-bold ${editForm.dealStatus === st.val ? (st.val === 'Won' ? 'btn-success text-white' : st.val === 'Lost' ? 'btn-danger text-white' : 'btn-warning text-dark') : st.cls}`}
+                              onClick={() => setEditForm({ ...editForm, dealStatus: st.val })}
+                            >
+                              {st.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Opportunity Rating</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.opportunity}
+                          onChange={(e) => setEditForm({ ...editForm, opportunity: e.target.value })}
+                        >
+                          <option value="HOT">🔴 HOT</option>
+                          <option value="WARM">🟠 WARM</option>
+                          <option value="COLD">⚪ COLD</option>
+                          <option value="FUTURE POTENTIAL">🔵 FUTURE POTENTIAL</option>
+                          <option value="DEALER DEVELOPMENT">🟣 DEALER DEVELOPMENT</option>
+                          <option value="NO REQUIREMENT">⚫ NO REQUIREMENT</option>
+                        </select>
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Budget</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.budget}
+                          onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+                        >
+                          <option value="">Select Budget status...</option>
+                          <option value="Available">Available</option>
+                          <option value="Not Available">Not Available</option>
+                          <option value="To Be Discussed">To Be Discussed</option>
+                        </select>
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Approx. Order Value (₹)</label>
+                        {isCustomEditReqValue ? (
+                          <div className="position-relative">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="form-control-pocika pe-5"
+                              placeholder="Type amount in ₹ (e.g. 250000)"
+                              value={editForm.requirementValue}
+                              autoFocus
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const oldReq = editForm.requirementValue;
+                                const updated = { ...editForm, requirementValue: val };
+                                if (!editForm.expectedOrderValue || editForm.expectedOrderValue === oldReq) {
+                                  updated.expectedOrderValue = val;
+                                }
+                                setEditForm(updated);
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                              title="Switch to dropdown list"
+                              onClick={() => {
+                                setIsCustomEditReqValue(false);
+                                setEditForm({ ...editForm, requirementValue: '' });
+                              }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            className="form-control-pocika form-select"
+                            value={rupeeBrackets.includes(editForm.requirementValue) ? editForm.requirementValue : ''}
+                            onChange={(e) => {
+                              if (e.target.value === 'Other') {
+                                setIsCustomEditReqValue(true);
+                                setEditForm({ ...editForm, requirementValue: '' });
+                              } else {
+                                const val = e.target.value;
+                                const oldReq = editForm.requirementValue;
+                                const updated = { ...editForm, requirementValue: val };
+                                if (!editForm.expectedOrderValue || editForm.expectedOrderValue === oldReq) {
+                                  updated.expectedOrderValue = val;
+                                }
+                                setEditForm(updated);
+                              }
+                            }}
+                          >
+                            <option value="">Select Approx Value Range...</option>
+                            {rupeeBrackets.map((b) => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                            <option value="Other">Other (Enter custom amount)...</option>
+                          </select>
+                        )}
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Expected Order Value (₹)</label>
+                        {isCustomEditExpValue ? (
+                          <div className="position-relative">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="form-control-pocika pe-5"
+                              placeholder="Type amount in ₹ (e.g. 200000)"
+                              value={editForm.expectedOrderValue}
+                              autoFocus
+                              onChange={(e) => setEditForm({ ...editForm, expectedOrderValue: e.target.value })}
+                            />
+                            <button
+                              type="button"
+                              className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                              title="Switch to dropdown list"
+                              onClick={() => {
+                                setIsCustomEditExpValue(false);
+                                setEditForm({ ...editForm, expectedOrderValue: '' });
+                              }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            className="form-control-pocika form-select"
+                            value={rupeeBrackets.includes(editForm.expectedOrderValue) ? editForm.expectedOrderValue : ''}
+                            onChange={(e) => {
+                              if (e.target.value === 'Other') {
+                                setIsCustomEditExpValue(true);
+                                setEditForm({ ...editForm, expectedOrderValue: '' });
+                              } else {
+                                setEditForm({ ...editForm, expectedOrderValue: e.target.value });
+                              }
+                            }}
+                          >
+                            <option value="">Select Expected Value Range...</option>
+                            {rupeeBrackets.map((b) => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                            <option value="Other">Other (Enter custom amount)...</option>
+                          </select>
+                        )}
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-1">Payment Terms Expected</label>
+                        <input
+                          type="text"
+                          className="form-control-pocika"
+                          value={editForm.paymentTerms}
+                          onChange={(e) => setEditForm({ ...editForm, paymentTerms: e.target.value })}
+                          placeholder="e.g. 30 Days Credit, 50% Adv + 50% Delivery"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: Follow-up & Notes */}
+                  {activeEditTab === 'followup' && (
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Next Follow-up Date</label>
+                        <input
+                          type="date"
+                          className="form-control-pocika"
+                          value={editForm.followUpDate}
+                          onChange={(e) => setEditForm({ ...editForm, followUpDate: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Send Quotation By</label>
+                        <input
+                          type="date"
+                          className="form-control-pocika"
+                          value={editForm.quotationDate}
+                          onChange={(e) => setEditForm({ ...editForm, quotationDate: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="col-md-6">
+                        <label className="field-label mb-1">Next Planned Interaction</label>
+                        <select
+                          className="form-control-pocika form-select"
+                          value={editForm.nextVisitType}
+                          onChange={(e) => setEditForm({ ...editForm, nextVisitType: e.target.value })}
+                        >
+                          <option value="Follow-up">Follow-up Call</option>
+                          <option value="Site Visit">Site Visit</option>
+                          <option value="Dealer Meeting">Dealer Meeting</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-2">Next Actions to take</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          {['Quotation', 'Product Demo', 'Sample', 'Technical Discussion', 'Management Meeting'].map((act) => {
+                            const isActChecked = editForm.nextAction?.includes(act);
+                            return (
+                              <button
+                                key={act}
+                                type="button"
+                                className={`btn btn-sm ${isActChecked ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+                                style={{ fontSize: '0.8rem', borderRadius: '18px', padding: '4px 12px' }}
+                                onClick={() => {
+                                  const updatedActs = isActChecked
+                                    ? editForm.nextAction.filter((a) => a !== act)
+                                    : [...(editForm.nextAction || []), act];
+                                  setEditForm({ ...editForm, nextAction: updatedActs });
+                                }}
+                              >
+                                {isActChecked && <span className="me-1">✓</span>}
+                                {act}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-1">Next Action / Commitment</label>
+                        <textarea
+                          className="form-control-pocika"
+                          rows="2"
+                          value={editForm.nextActionCommitment}
+                          onChange={(e) => setEditForm({ ...editForm, nextActionCommitment: e.target.value })}
+                          placeholder="e.g. Will share revised quotation by Friday..."
+                        />
+                      </div>
+
+                      <div className="col-12">
+                        <label className="field-label mb-1">Visit Remarks / Notes</label>
+                        <textarea
+                          className="form-control-pocika"
+                          rows="2"
+                          value={editForm.remarks}
+                          onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
+                          placeholder="Add any special observations or admin notes..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-footer border-top d-flex justify-content-between">
+                  <div className="text-muted small">
+                    Changes will be saved and recorded in the audit log.
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn-pocika btn-pocika-secondary"
+                      onClick={() => setShowEditModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-pocika btn-pocika-primary"
+                      disabled={savingEdit}
+                    >
+                      {savingEdit ? 'Saving All Changes...' : 'Save Changes'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -1053,7 +1557,7 @@ function PhotoItem({ photo, idx, onSelect }) {
       ) : (
         <div
           className="photo-fallback-card d-flex flex-column align-items-center justify-content-center p-3 text-center"
-          style={{ height: '160px', background: '#f8fafc', color: 'var(--color-text-muted)' }}
+          style={{ height: '160px', background: 'var(--color-bg)', color: 'var(--color-text-muted)' }}
         >
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-2 text-secondary">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>

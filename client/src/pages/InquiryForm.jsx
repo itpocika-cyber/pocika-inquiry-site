@@ -10,6 +10,42 @@ import { useInquiryFormStore } from '../store/inquiryFormStore';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
 
+const standardDesignations = [
+  'Plant Head / Factory Manager',
+  'Safety Officer / EHS Manager',
+  'Purchase Manager / Procurement',
+  'Owner / Director / MD',
+  'Maintenance / Facility Manager',
+  'Project Manager / EPC Head',
+  'Admin / HR Head',
+  'Consultant / Architect'
+];
+
+const orderValueBrackets = [
+  'Under ₹50,000',
+  '₹50,000–1,00,000',
+  '₹1,00,000–2,50,000',
+  '₹2,50,000–5,00,000',
+  '₹5,00,000–10,00,000',
+  '₹10,00,000+'
+];
+
+const standardPaymentTerms = [
+  '100% Advance',
+  '50% Adv + 50% Delivery',
+  '30 Days Credit',
+  '15 Days Credit'
+];
+
+const standardCompetitors = [
+  'Ceasefire',
+  'Minimax',
+  'Safex',
+  'Kanex',
+  'Local Dealer',
+  'None / Direct Client'
+];
+
 export default function InquiryForm() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -37,6 +73,61 @@ export default function InquiryForm() {
   } = useInquiryFormStore();
 
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [isCustomDesignation, setIsCustomDesignation] = useState(false);
+  const [isCustomReqValue, setIsCustomReqValue] = useState(false);
+  const [isCustomExpValue, setIsCustomExpValue] = useState(false);
+  const [isCustomPaymentTerms, setIsCustomPaymentTerms] = useState(false);
+  const [isCustomCompetitor, setIsCustomCompetitor] = useState(false);
+
+  useEffect(() => {
+    if (
+      formData.customer?.designation &&
+      !standardDesignations.includes(formData.customer.designation) &&
+      formData.customer.designation !== 'Other'
+    ) {
+      setIsCustomDesignation(true);
+    }
+  }, [formData.customer?.designation]);
+
+  useEffect(() => {
+    if (
+      formData.commercial?.requirementValue &&
+      !orderValueBrackets.includes(formData.commercial.requirementValue) &&
+      formData.commercial.requirementValue !== 'Other'
+    ) {
+      setIsCustomReqValue(true);
+    }
+  }, [formData.commercial?.requirementValue]);
+
+  useEffect(() => {
+    if (
+      formData.commercial?.expectedOrderValue &&
+      !orderValueBrackets.includes(formData.commercial.expectedOrderValue) &&
+      formData.commercial.expectedOrderValue !== 'Other'
+    ) {
+      setIsCustomExpValue(true);
+    }
+  }, [formData.commercial?.expectedOrderValue]);
+
+  useEffect(() => {
+    if (
+      formData.commercial?.paymentTerms &&
+      !standardPaymentTerms.includes(formData.commercial.paymentTerms) &&
+      formData.commercial.paymentTerms !== 'Other'
+    ) {
+      setIsCustomPaymentTerms(true);
+    }
+  }, [formData.commercial?.paymentTerms]);
+
+  useEffect(() => {
+    if (
+      formData.commercial?.competitors &&
+      !standardCompetitors.includes(formData.commercial.competitors) &&
+      formData.commercial.competitors !== 'Other'
+    ) {
+      setIsCustomCompetitor(true);
+    }
+  }, [formData.commercial?.competitors]);
 
   // Offline status tracking
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -63,6 +154,70 @@ export default function InquiryForm() {
       setField('salesPerson', user.displayName || user.email);
     }
   }, [user]);
+
+  // Intelligent Step-by-Step Auto-Defaults across Steps 3, 4, 5, 6
+  useEffect(() => {
+    // Step 3 (Product / Requirement): Pre-fill Reason based on Site Status
+    if (currentStep === 3) {
+      if (!formData.requirement?.reason) {
+        if (formData.business?.status === 'New' || formData.business?.status === 'Under Construction') {
+          setField('requirement.reason', 'New Installation');
+        } else if (formData.business?.status === 'Expansion/Modification') {
+          setField('requirement.reason', 'Expansion');
+        } else if (formData.business?.status === 'Existing') {
+          setField('requirement.reason', 'Compliance/Audit');
+        }
+      }
+    }
+
+    // Step 4 (Commercial): Pre-fill Decision Maker from Step 1 Contact
+    if (currentStep === 4) {
+      if (!formData.commercial?.decisionMakerName && formData.customer?.contactPerson) {
+        setField('commercial.decisionMakerName', formData.customer.contactPerson);
+      }
+      if (!formData.commercial?.decisionMakerDesignation && formData.customer?.designation) {
+        setField('commercial.decisionMakerDesignation', formData.customer.designation);
+      }
+      if (!formData.commercial?.decisionRole) {
+        const des = (formData.customer?.designation || '').toLowerCase();
+        if (des.includes('owner') || des.includes('director') || des.includes('md') || des.includes('head')) {
+          setField('commercial.decisionRole', 'Decision Maker');
+        } else {
+          setField('commercial.decisionRole', 'Influencer');
+        }
+      }
+      if (!formData.commercial?.budget) {
+        setField('commercial.budget', 'Available');
+      }
+    }
+
+    // Step 5 (Visit & Opportunity): Pre-fill Person Met from Contact & Default Photos
+    if (currentStep === 5) {
+      if (!formData.visit?.personMet && formData.customer?.contactPerson) {
+        setField('visit.personMet', formData.customer.contactPerson);
+      }
+      if (!formData.visit?.photos) {
+        setField('visit.photos', 'Taken');
+      }
+    }
+
+    // Step 6 (Follow-up): Smart Next Actions & Follow-up Dates
+    if (currentStep === 6) {
+      if (formData.hasProductRequirement !== false) {
+        if (!formData.followUp?.nextAction || formData.followUp.nextAction.length === 0) {
+          setField('followUp.nextAction', ['Quotation']);
+        }
+        if (!formData.followUp?.quotationDate) {
+          const qDate = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0];
+          setField('followUp.quotationDate', qDate);
+        }
+      }
+      if (!formData.followUp?.followUpDate) {
+        const fuDate = new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0];
+        setField('followUp.followUpDate', fuDate);
+      }
+    }
+  }, [currentStep]);
 
   // Debounced Company History Check (500ms)
   useEffect(() => {
@@ -327,13 +482,56 @@ export default function InquiryForm() {
                   <div className="col-md-6">
                     <div className="field-group">
                       <label className="field-label">Designation</label>
-                      <input
-                        className="form-control-pocika"
-                        type="text"
-                        value={formData.customer?.designation || ''}
-                        onChange={(e) => setField('customer.designation', e.target.value)}
-                        placeholder="e.g. Plant Manager"
-                      />
+                      {isCustomDesignation ? (
+                        <div className="position-relative">
+                          <input
+                            className={`form-control-pocika ${validationErrors['customer.designation'] ? 'is-invalid' : ''}`}
+                            type="text"
+                            style={{ paddingRight: '2.5rem' }}
+                            placeholder="Type designation (e.g. Site Supervisor)"
+                            value={formData.customer?.designation || ''}
+                            autoFocus
+                            onChange={(e) => setField('customer.designation', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                            title="Click to select another option from list"
+                            onClick={() => {
+                              setIsCustomDesignation(false);
+                              setField('customer.designation', '');
+                            }}
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          className={`form-control-pocika form-select ${validationErrors['customer.designation'] ? 'is-invalid' : ''}`}
+                          value={standardDesignations.includes(formData.customer?.designation) ? formData.customer.designation : ''}
+                          onChange={(e) => {
+                            if (e.target.value === 'Other') {
+                              setIsCustomDesignation(true);
+                              setField('customer.designation', '');
+                            } else {
+                              setField('customer.designation', e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="">Select Designation...</option>
+                          {standardDesignations.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                          <option value="Other">Other (Type custom)...</option>
+                        </select>
+                      )}
+                      {validationErrors['customer.designation'] && (
+                        <span className="field-error is-visible">
+                          {validationErrors['customer.designation']}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="col-md-6">
@@ -344,8 +542,14 @@ export default function InquiryForm() {
                       <input
                         className={`form-control-pocika ${validationErrors['customer.mobile'] ? 'is-invalid' : ''}`}
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={10}
                         value={formData.customer?.mobile || ''}
-                        onChange={(e) => setField('customer.mobile', e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setField('customer.mobile', val);
+                        }}
                         placeholder="10-digit mobile number"
                       />
                       {validationErrors['customer.mobile'] && (
@@ -448,7 +652,27 @@ export default function InquiryForm() {
                           type="radio"
                           name="customerType"
                           checked={formData.business?.customerType === type}
-                          onChange={() => setField('business.customerType', type)}
+                          onChange={() => {
+                            setField('business.customerType', type);
+                            if (type === 'GIDC/Industrial') {
+                              setField('business.facility', 'Factory');
+                            } else if (type === 'Developer/Builder') {
+                              setField('business.facility', 'Commercial Site');
+                              setField('business.status', 'Under Construction');
+                            } else if (type === 'EPC/Contractor') {
+                              setField('business.facility', 'Commercial Site');
+                              setField('business.status', 'Under Construction');
+                            } else if (type === 'Corporate') {
+                              setField('business.facility', 'Office');
+                            } else if (type === 'Commercial') {
+                              setField('business.facility', 'Commercial Site');
+                            } else if (type === 'Dealer/Distributor') {
+                              setField('business.facility', 'Warehouse');
+                              setField('business.status', 'Existing');
+                            } else if (type === 'Consultant') {
+                              setField('business.facility', 'Office');
+                            }
+                          }}
                         />
                         {type}
                       </label>
@@ -497,7 +721,7 @@ export default function InquiryForm() {
                   </div>
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label">Location/GIDC</label>
+                      <label className="field-label">City or GIDC</label>
                       <input
                         className="form-control-pocika"
                         type="text"
@@ -541,7 +765,7 @@ export default function InquiryForm() {
                 {formData.business?.facility === 'Other' && (
                   <div className="field-group mb-3">
                     <label className="field-label">
-                      Please specify Facility<span className="required-mark">*</span>
+                      Type the facility name<span className="required-mark">*</span>
                     </label>
                     <input
                       className="form-control-pocika"
@@ -558,28 +782,63 @@ export default function InquiryForm() {
                 )}
 
                 <div className="row g-3 mb-3">
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="field-group">
-                      <label className="field-label">Approx. Area (Sq.Ft.)</label>
+                      <label className="field-label">Size (Sq.Ft.)</label>
                       <input
                         className="form-control-pocika"
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        name="business.areaSqft"
                         value={formData.business?.areaSqft || ''}
-                        onChange={(e) => setField('business.areaSqft', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e' || e.key === '+') e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setField('business.areaSqft', val);
+                        }}
                         placeholder="e.g. 25000"
                       />
                     </div>
                   </div>
-                  <div className="col-md-6">
+                  <div className="col-md-4">
                     <div className="field-group">
-                      <label className="field-label">Floors</label>
+                      <label className="field-label">Floors (Above Ground)</label>
                       <input
                         className="form-control-pocika"
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min="0"
+                        name="business.floors"
                         value={formData.business?.floors || ''}
-                        onChange={(e) => setField('business.floors', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e' || e.key === '+') e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setField('business.floors', val);
+                        }}
                         placeholder="e.g. 3"
                       />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="field-group">
+                      <label className="field-label">Basement / Underground</label>
+                      <select
+                        className="form-control-pocika form-select"
+                        value={formData.business?.basement || 'None'}
+                        onChange={(e) => setField('business.basement', e.target.value)}
+                      >
+                        <option value="None">None (No Basement)</option>
+                        <option value="1 Basement (B1)">1 Basement (B1)</option>
+                        <option value="2 Basements (B1, B2)">2 Basements (B1, B2)</option>
+                        <option value="3+ Basements">3+ Basements</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -587,7 +846,7 @@ export default function InquiryForm() {
                 {/* Facility Status */}
                 <div className="field-group mb-3">
                   <label className="field-label mb-2">
-                    Project/Facility Status<span className="required-mark">*</span>
+                    Current Site Status<span className="required-mark">*</span>
                   </label>
                   <div className="chip-group" role="radiogroup">
                     {['New', 'Under Construction', 'Existing', 'Expansion/Modification'].map((st) => (
@@ -612,23 +871,61 @@ export default function InquiryForm() {
                   )}
                 </div>
 
+                {/* When do they need it */}
                 <div className="field-group mb-4">
-                  <label className="field-label">Expected Requirement Date</label>
-                  <input
-                    className="form-control-pocika"
-                    type="date"
-                    value={formData.business?.expectedDate || ''}
-                    onChange={(e) => setField('business.expectedDate', e.target.value)}
-                  />
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <label className="field-label mb-0">When do they need it? (Expected Timeline)</label>
+                    {formData.business?.expectedDate && (
+                      <button
+                        type="button"
+                        className="btn-pocika btn-pocika-ghost btn-sm text-muted py-0 px-2"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => setField('business.expectedDate', '')}
+                      >
+                        Clear Date
+                      </button>
+                    )}
+                  </div>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    {[
+                      { label: 'Urgent (Within 7 Days)', days: 7 },
+                      { label: 'Within 1 Month', days: 30 },
+                      { label: 'Within 3 Months', days: 90 }
+                    ].map((shortcut) => {
+                      const targetDate = new Date(Date.now() + shortcut.days * 86400000).toISOString().split('T')[0];
+                      const isSelected = formData.business?.expectedDate === targetDate;
+                      return (
+                        <button
+                          key={shortcut.label}
+                          type="button"
+                          className={`btn-pocika btn-sm py-1 px-3 ${isSelected ? 'btn-pocika-primary' : 'btn-pocika-secondary'}`}
+                          style={{ fontSize: '0.82rem', height: '38px', borderRadius: '8px' }}
+                          onClick={() => setField('business.expectedDate', targetDate)}
+                        >
+                          {shortcut.label}
+                        </button>
+                      );
+                    })}
+                    <div style={{ width: '190px' }}>
+                      <input
+                        className="form-control-pocika"
+                        type="date"
+                        name="business.expectedDate"
+                        style={{ height: '38px', padding: '6px 10px' }}
+                        value={formData.business?.expectedDate || ''}
+                        onChange={(e) => setField('business.expectedDate', e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Gating Question: Product Requirement */}
-                <div className="field-group p-3 rounded-3 border" style={{ backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
-                  <label className="field-label mb-2 fw-bold" style={{ color: 'var(--color-navy)', fontSize: '0.95rem' }}>
-                    Did this visit result in a specific product requirement?<span className="required-mark">*</span>
+                <div className="field-group p-3 rounded-3 border" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+                  <label className="field-label mb-1 fw-bold" style={{ color: 'var(--color-navy)', fontSize: '0.95rem' }}>
+                    Products / Quotation Needed?<span className="required-mark">*</span>
                   </label>
                   <p className="text-muted small mb-3">
-                    Select <strong>No</strong> for introductory or cold visits without a specific product scope. Steps 3 (Products) & 4 (Commercials) will be skipped automatically.
+                    Select <strong>Yes</strong> if products/quote required, or <strong>No</strong> for intro visit (skips Steps 3 & 4).
                   </p>
                   <div className="chip-group" role="radiogroup">
                     <label className={`chip-option ${formData.hasProductRequirement !== false ? 'is-selected' : ''}`}>
@@ -638,7 +935,7 @@ export default function InquiryForm() {
                         checked={formData.hasProductRequirement !== false}
                         onChange={() => setField('hasProductRequirement', true)}
                       />
-                      Yes — Specific product requirement discussed
+                      Yes — Products / Quote Required
                     </label>
                     <label className={`chip-option ${formData.hasProductRequirement === false ? 'is-selected' : ''}`}>
                       <input
@@ -647,7 +944,7 @@ export default function InquiryForm() {
                         checked={formData.hasProductRequirement === false}
                         onChange={() => setField('hasProductRequirement', false)}
                       />
-                      No — General visit / Future potential only
+                      No — Intro Only (Skip to Step 5)
                     </label>
                   </div>
                 </div>
@@ -657,7 +954,7 @@ export default function InquiryForm() {
             {/* STEP 3: Product / Requirement */}
             {currentStep === 3 && (
               <section className="form-step-panel card-pocika p-4">
-                <div className="d-flex justify-content-between align-items-center mb-3 p-2 px-3 rounded-2 border" style={{ backgroundColor: '#f0f7ff', borderColor: '#b9d5f3' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3 p-2 px-3 rounded-2 border" style={{ backgroundColor: 'var(--color-primary-soft)', borderColor: 'var(--color-border)' }}>
                   <span className="small text-primary fw-medium">
                     Specific product requirement: <strong>Yes</strong>
                   </span>
@@ -687,7 +984,15 @@ export default function InquiryForm() {
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => toggleArrayItem('products', prod)}
+                              onChange={() => {
+                                toggleArrayItem('products', prod);
+                                if (prod === 'AMC/Refilling/Maintenance') {
+                                  const willBeSelected = !isSelected;
+                                  if (willBeSelected && !formData.requirement?.reason) {
+                                    setField('requirement.reason', 'Annual Requirement');
+                                  }
+                                }
+                              }}
                             />
                             <span className="product-card-label">{prod}</span>
                             {isSelected && (
@@ -749,6 +1054,7 @@ export default function InquiryForm() {
                       <input
                         className="form-control-pocika"
                         type="text"
+                        inputMode="numeric"
                         value={formData.requirement?.estimatedQuantity || ''}
                         onChange={(e) => setField('requirement.estimatedQuantity', e.target.value)}
                         placeholder="e.g. 50 units"
@@ -807,17 +1113,88 @@ export default function InquiryForm() {
                   </div>
                 </div>
 
-                {/* Optional AMC / Contract Expiry Date */}
-                <div className="field-group mt-3">
-                  <label className="field-label">AMC / Contract Expiry Date (Optional)</label>
-                  <input
-                    className="form-control-pocika"
-                    type="date"
-                    value={formData.requirement?.renewalDueDate || ''}
-                    onChange={(e) => setField('requirement.renewalDueDate', e.target.value)}
-                  />
-                  <div className="text-muted small mt-1">
-                    When is their current fire safety contract or refilling due for renewal?
+                {/* AMC / Contract Expiry Date Tracker */}
+                <div
+                  className={`field-group mt-4 p-3 rounded-3 border ${
+                    formData.products?.includes('AMC/Refilling/Maintenance')
+                      ? 'border-primary'
+                      : ''
+                  }`}
+                  style={{
+                    transition: 'all 0.2s ease',
+                    backgroundColor: formData.products?.includes('AMC/Refilling/Maintenance')
+                      ? 'rgba(37, 99, 235, 0.05)'
+                      : 'var(--color-bg)'
+                  }}
+                >
+                  <div className="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+                    <div className="d-flex align-items-center gap-2">
+                      <label className="field-label mb-0 fw-semibold">
+                        AMC / Contract Expiry Date (Optional)
+                      </label>
+                      {formData.products?.includes('AMC/Refilling/Maintenance') && (
+                        <span
+                          className="badge bg-primary text-white"
+                          style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '4px' }}
+                        >
+                          📅 Auto-Alert Tracker
+                        </span>
+                      )}
+                    </div>
+                    {formData.requirement?.renewalDueDate && (
+                      <button
+                        type="button"
+                        className="btn-pocika btn-pocika-ghost btn-sm text-muted py-0 px-2"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => setField('requirement.renewalDueDate', '')}
+                      >
+                        Clear Date
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-muted small mb-2">
+                    When is their current fire safety contract or refilling due?{' '}
+                    <span className="text-primary fw-medium">
+                      Dashboard will automatically alert your team 30 days before this date.
+                    </span>
+                  </p>
+
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    {[
+                      { label: 'Next Month (30d)', days: 30 },
+                      { label: 'In 3 Months', days: 90 },
+                      { label: 'In 6 Months', days: 180 },
+                      { label: 'In 1 Year', days: 365 }
+                    ].map((shortcut) => {
+                      const targetDate = new Date(Date.now() + shortcut.days * 86400000)
+                        .toISOString()
+                        .split('T')[0];
+                      const isSelected = formData.requirement?.renewalDueDate === targetDate;
+                      return (
+                        <button
+                          key={shortcut.label}
+                          type="button"
+                          className={`btn-pocika btn-sm py-1 px-3 ${
+                            isSelected ? 'btn-pocika-primary' : 'btn-pocika-secondary'
+                          }`}
+                          style={{ fontSize: '0.8rem', height: '36px', borderRadius: '8px' }}
+                          onClick={() => setField('requirement.renewalDueDate', targetDate)}
+                        >
+                          {shortcut.label}
+                        </button>
+                      );
+                    })}
+
+                    <div style={{ width: '180px' }}>
+                      <input
+                        className="form-control-pocika"
+                        type="date"
+                        style={{ height: '36px', padding: '4px 10px' }}
+                        value={formData.requirement?.renewalDueDate || ''}
+                        onChange={(e) => setField('requirement.renewalDueDate', e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
@@ -831,38 +1208,64 @@ export default function InquiryForm() {
                 <div className="row g-3 mb-3">
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label mb-1">Approx. Requirement Value (₹)</label>
-                      <div className="d-flex flex-wrap gap-1 mb-2">
-                        {[
-                          'Under ₹50,000',
-                          '₹50,000–1,00,000',
-                          '₹1,00,000–2,50,000',
-                          '₹2,50,000–5,00,000',
-                          '₹5,00,000–10,00,000',
-                          '₹10,00,000+'
-                        ].map((bracket) => (
+                      <label className="field-label">Approx. Order Value (₹)</label>
+                      {isCustomReqValue ? (
+                        <div className="position-relative">
+                          <input
+                            className="form-control-pocika pe-5"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Type amount in ₹ (e.g. 250000)"
+                            value={formData.commercial?.requirementValue || ''}
+                            autoFocus
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const oldReq = formData.commercial?.requirementValue;
+                              setField('commercial.requirementValue', val);
+                              if (!formData.commercial?.expectedOrderValue || formData.commercial?.expectedOrderValue === oldReq) {
+                                setField('commercial.expectedOrderValue', val);
+                              }
+                            }}
+                          />
                           <button
-                            key={bracket}
                             type="button"
-                            className={`btn btn-sm ${
-                              formData.commercial?.requirementValue === bracket
-                                ? 'btn-primary text-white'
-                                : 'btn-outline-secondary'
-                            }`}
-                            style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '14px' }}
-                            onClick={() => setField('commercial.requirementValue', bracket)}
+                            className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                            title="Switch to dropdown list"
+                            onClick={() => {
+                              setIsCustomReqValue(false);
+                              setField('commercial.requirementValue', '');
+                            }}
                           >
-                            {bracket}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
                           </button>
-                        ))}
-                      </div>
-                      <input
-                        className="form-control-pocika"
-                        type="text"
-                        value={formData.commercial?.requirementValue || ''}
-                        onChange={(e) => setField('commercial.requirementValue', e.target.value)}
-                        placeholder="Select bracket above or type amount (e.g. 250000)"
-                      />
+                        </div>
+                      ) : (
+                        <select
+                          className="form-control-pocika form-select"
+                          value={orderValueBrackets.includes(formData.commercial?.requirementValue) ? formData.commercial.requirementValue : ''}
+                          onChange={(e) => {
+                            if (e.target.value === 'Other') {
+                              setIsCustomReqValue(true);
+                              setField('commercial.requirementValue', '');
+                            } else {
+                              const val = e.target.value;
+                              const oldReq = formData.commercial?.requirementValue;
+                              setField('commercial.requirementValue', val);
+                              if (!formData.commercial?.expectedOrderValue || formData.commercial?.expectedOrderValue === oldReq) {
+                                setField('commercial.expectedOrderValue', val);
+                              }
+                            }
+                          }}
+                        >
+                          <option value="">Select Approx Value Range...</option>
+                          {orderValueBrackets.map((b) => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                          <option value="Other">Other (Enter custom amount)...</option>
+                        </select>
+                      )}
                       <span className="text-muted small mt-1 d-block">
                         Approximate ranges are acceptable if exact numbers are not known.
                       </span>
@@ -870,38 +1273,52 @@ export default function InquiryForm() {
                   </div>
                   <div className="col-md-6">
                     <div className="field-group">
-                      <label className="field-label mb-1">Expected Order Value (₹)</label>
-                      <div className="d-flex flex-wrap gap-1 mb-2">
-                        {[
-                          'Under ₹50,000',
-                          '₹50,000–1,00,000',
-                          '₹1,00,000–2,50,000',
-                          '₹2,50,000–5,00,000',
-                          '₹5,00,000–10,00,000',
-                          '₹10,00,000+'
-                        ].map((bracket) => (
+                      <label className="field-label">Expected Order Value (₹)</label>
+                      {isCustomExpValue ? (
+                        <div className="position-relative">
+                          <input
+                            className="form-control-pocika pe-5"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Type amount in ₹ (e.g. 200000)"
+                            value={formData.commercial?.expectedOrderValue || ''}
+                            autoFocus
+                            onChange={(e) => setField('commercial.expectedOrderValue', e.target.value)}
+                          />
                           <button
-                            key={bracket}
                             type="button"
-                            className={`btn btn-sm ${
-                              formData.commercial?.expectedOrderValue === bracket
-                                ? 'btn-primary text-white'
-                                : 'btn-outline-secondary'
-                            }`}
-                            style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '14px' }}
-                            onClick={() => setField('commercial.expectedOrderValue', bracket)}
+                            className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                            title="Switch to dropdown list"
+                            onClick={() => {
+                              setIsCustomExpValue(false);
+                              setField('commercial.expectedOrderValue', '');
+                            }}
                           >
-                            {bracket}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
                           </button>
-                        ))}
-                      </div>
-                      <input
-                        className="form-control-pocika"
-                        type="text"
-                        value={formData.commercial?.expectedOrderValue || ''}
-                        onChange={(e) => setField('commercial.expectedOrderValue', e.target.value)}
-                        placeholder="Select bracket above or type amount (e.g. 200000)"
-                      />
+                        </div>
+                      ) : (
+                        <select
+                          className="form-control-pocika form-select"
+                          value={orderValueBrackets.includes(formData.commercial?.expectedOrderValue) ? formData.commercial.expectedOrderValue : ''}
+                          onChange={(e) => {
+                            if (e.target.value === 'Other') {
+                              setIsCustomExpValue(true);
+                              setField('commercial.expectedOrderValue', '');
+                            } else {
+                              setField('commercial.expectedOrderValue', e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="">Select Expected Value Range...</option>
+                          {orderValueBrackets.map((b) => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                          <option value="Other">Other (Enter custom amount)...</option>
+                        </select>
+                      )}
                       <span className="text-muted small mt-1 d-block">
                         Approximate ranges are acceptable if exact numbers are not known.
                       </span>
@@ -933,27 +1350,104 @@ export default function InquiryForm() {
                   <div className="col-md-6">
                     <div className="field-group">
                       <label className="field-label">Payment Terms Expected</label>
-                      <input
-                        className="form-control-pocika"
-                        type="text"
-                        value={formData.commercial?.paymentTerms || ''}
-                        onChange={(e) => setField('commercial.paymentTerms', e.target.value)}
-                        placeholder="e.g. 30 days credit, 50% advance"
-                      />
+                      {isCustomPaymentTerms ? (
+                        <div className="position-relative">
+                          <input
+                            className="form-control-pocika pe-5"
+                            type="text"
+                            placeholder="e.g. 45 Days Credit, LC at sight"
+                            value={formData.commercial?.paymentTerms || ''}
+                            autoFocus
+                            onChange={(e) => setField('commercial.paymentTerms', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                            title="Switch to dropdown list"
+                            onClick={() => {
+                              setIsCustomPaymentTerms(false);
+                              setField('commercial.paymentTerms', '');
+                            }}
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          className="form-control-pocika form-select"
+                          value={standardPaymentTerms.includes(formData.commercial?.paymentTerms) ? formData.commercial.paymentTerms : ''}
+                          onChange={(e) => {
+                            if (e.target.value === 'Other') {
+                              setIsCustomPaymentTerms(true);
+                              setField('commercial.paymentTerms', '');
+                            } else {
+                              setField('commercial.paymentTerms', e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="">Select Payment Terms...</option>
+                          {standardPaymentTerms.map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                          <option value="Other">Other (Type custom terms)...</option>
+                        </select>
+                      )}
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="field-group">
                       <label className="field-label">Competitor / Brands</label>
-                      <input
-                        className="form-control-pocika"
-                        type="text"
-                        value={formData.commercial?.competitors || ''}
-                        onChange={(e) => setField('commercial.competitors', e.target.value)}
-                        placeholder="Competitors quoting on site"
-                      />
+                      {isCustomCompetitor ? (
+                        <div className="position-relative">
+                          <input
+                            className="form-control-pocika pe-5"
+                            type="text"
+                            placeholder="e.g. Ceasefire, Safex, Local Dealer"
+                            value={formData.commercial?.competitors || ''}
+                            autoFocus
+                            onChange={(e) => setField('commercial.competitors', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="btn position-absolute end-0 top-50 translate-middle-y me-1 p-1 text-muted border-0 bg-transparent"
+                            title="Switch to dropdown list"
+                            onClick={() => {
+                              setIsCustomCompetitor(false);
+                              setField('commercial.competitors', '');
+                            }}
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          className="form-control-pocika form-select"
+                          value={standardCompetitors.includes(formData.commercial?.competitors) ? formData.commercial.competitors : ''}
+                          onChange={(e) => {
+                            if (e.target.value === 'Other') {
+                              setIsCustomCompetitor(true);
+                              setField('commercial.competitors', '');
+                            } else {
+                              setField('commercial.competitors', e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="">Select Competitor / Brand...</option>
+                          {standardCompetitors.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                          <option value="Other">Multiple / Other (Type custom)...</option>
+                        </select>
+                      )}
                     </div>
                   </div>
+                </div>
+
+                <div className="row g-3 mb-3">
                   <div className="col-md-6">
                     <div className="field-group">
                       <label className="field-label">Decision Maker Name</label>
@@ -1002,12 +1496,14 @@ export default function InquiryForm() {
 
                 <div className="field-group">
                   <label className="field-label">Purchase Decision By</label>
-                  <input
-                    className="form-control-pocika"
-                    type="date"
-                    value={formData.commercial?.purchaseDecisionBy || ''}
-                    onChange={(e) => setField('commercial.purchaseDecisionBy', e.target.value)}
-                  />
+                  <div style={{ maxWidth: '280px' }}>
+                    <input
+                      className="form-control-pocika"
+                      type="date"
+                      value={formData.commercial?.purchaseDecisionBy || ''}
+                      onChange={(e) => setField('commercial.purchaseDecisionBy', e.target.value)}
+                    />
+                  </div>
                 </div>
               </section>
             )}
@@ -1031,7 +1527,16 @@ export default function InquiryForm() {
                           type="radio"
                           name="visitType"
                           checked={formData.visit?.visitType === vt}
-                          onChange={() => setField('visit.visitType', vt)}
+                          onChange={() => {
+                            setField('visit.visitType', vt);
+                            if (vt === 'Cold Visit') {
+                              setField('visit.opportunity', 'WARM');
+                            } else if (vt === 'Lead Visit' || vt === 'Reference') {
+                              setField('visit.opportunity', 'HOT');
+                            } else if (vt === 'Existing Customer') {
+                              setField('visit.opportunity', 'WARM');
+                            }
+                          }}
                         />
                         {vt}
                       </label>
@@ -1097,40 +1602,56 @@ export default function InquiryForm() {
                   <label className="field-label mb-2">
                     Opportunity<span className="required-mark">*</span>
                   </label>
-                  <div className="d-flex flex-wrap gap-2">
+                  <div className="d-flex flex-wrap gap-2" role="radiogroup" aria-label="Opportunity Level">
                     {[
-                      { val: 'HOT', cls: 'badge-hot' },
-                      { val: 'WARM', cls: 'badge-warm' },
-                      { val: 'COLD', cls: 'badge-cold' },
-                      { val: 'FUTURE POTENTIAL', cls: 'badge-future-potential' },
-                      { val: 'DEALER DEVELOPMENT', cls: 'badge-dealer-development' },
-                      { val: 'NO REQUIREMENT', cls: 'badge-no-requirement' }
-                    ].map(({ val, cls }) => {
+                      { val: 'HOT', color: '#dc2626', bg: '#fef2f2', activeBg: '#dc2626', activeText: '#ffffff', border: '#fca5a5' },
+                      { val: 'WARM', color: '#d97706', bg: '#fffbeb', activeBg: '#d97706', activeText: '#ffffff', border: '#fcd34d' },
+                      { val: 'COLD', color: '#475569', bg: '#f8fafc', activeBg: '#475569', activeText: '#ffffff', border: '#cbd5e1' },
+                      { val: 'FUTURE POTENTIAL', color: '#0284c7', bg: '#f0f9ff', activeBg: '#0284c7', activeText: '#ffffff', border: '#7dd3fc' },
+                      { val: 'DEALER DEVELOPMENT', color: '#7c3aed', bg: '#f5f3ff', activeBg: '#7c3aed', activeText: '#ffffff', border: '#c4b5fd' },
+                      { val: 'NO REQUIREMENT', color: '#64748b', bg: '#f1f5f9', activeBg: '#64748b', activeText: '#ffffff', border: '#cbd5e1' }
+                    ].map(({ val, color, bg, activeBg, activeText, border }) => {
                       const isSelected = formData.visit?.opportunity === val;
                       return (
                         <label
                           key={val}
-                          className={`badge-pocika ${cls} ${isSelected ? 'is-selected' : ''}`}
                           style={{
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '8px 14px',
-                            fontWeight: isSelected ? '700' : '500',
-                            border: isSelected ? '2px solid currentColor' : '1px solid transparent',
-                            boxShadow: isSelected ? '0 0 0 2px rgba(11,61,145,0.3)' : 'none',
-                            transition: 'all 0.15s ease'
+                            gap: '6px',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            fontWeight: isSelected ? '700' : '600',
+                            color: isSelected ? activeText : color,
+                            backgroundColor: isSelected ? activeBg : bg,
+                            border: `1.5px solid ${isSelected ? activeBg : border}`,
+                            boxShadow: isSelected ? `0 2px 8px ${color}40` : 'none',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none'
                           }}
                         >
                           <input
                             type="radio"
                             name="opportunity"
+                            className="visually-hidden"
                             checked={isSelected}
                             onChange={() => setField('visit.opportunity', val)}
-                            style={{ margin: 0 }}
                           />
-                          {isSelected && <span>✓</span>}
+                          {isSelected ? (
+                            <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>✓</span>
+                          ) : (
+                            <span
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: color,
+                                display: 'inline-block'
+                              }}
+                            />
+                          )}
                           {val}
                         </label>
                       );
@@ -1186,15 +1707,17 @@ export default function InquiryForm() {
                 {formData.followUp?.nextAction?.includes('Quotation') && (
                   <div className="field-group mb-3">
                     <label className="field-label mb-1">
-                      Quotation Required By<span className="required-mark">*</span>
+                      Send Quotation By<span className="required-mark">*</span>
                     </label>
                     <div className="text-helper mb-2">When does the customer need this quote by?</div>
-                    <input
-                      className={`form-control-pocika ${validationErrors['followUp.quotationDate'] ? 'is-invalid' : ''}`}
-                      type="date"
-                      value={formData.followUp?.quotationDate || ''}
-                      onChange={(e) => setField('followUp.quotationDate', e.target.value)}
-                    />
+                    <div style={{ maxWidth: '280px' }}>
+                      <input
+                        className={`form-control-pocika ${validationErrors['followUp.quotationDate'] ? 'is-invalid' : ''}`}
+                        type="date"
+                        value={formData.followUp?.quotationDate || ''}
+                        onChange={(e) => setField('followUp.quotationDate', e.target.value)}
+                      />
+                    </div>
                     {validationErrors['followUp.quotationDate'] && (
                       <span className="field-error is-visible">
                         {validationErrors['followUp.quotationDate']}
@@ -1341,8 +1864,8 @@ export default function InquiryForm() {
           {isSubmitting
             ? 'Submitting inquiry...'
             : currentStep === totalSteps
-            ? 'Confirm & Submit'
-            : 'Save & continue'}
+              ? 'Confirm & Submit'
+              : 'Save & continue'}
         </button>
       </div>
 
@@ -1366,8 +1889,8 @@ export default function InquiryForm() {
             {isSubmitting
               ? 'Submitting...'
               : currentStep === totalSteps
-              ? 'Confirm & Submit'
-              : 'Next'}
+                ? 'Confirm & Submit'
+                : 'Next'}
           </button>
         </div>
       </div>

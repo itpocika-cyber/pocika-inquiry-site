@@ -65,6 +65,7 @@ export const getInitialInquiryData = () => ({
     facilityOther: '',
     areaSqft: '',
     floors: '',
+    basement: 'None',
     status: '',
     expectedDate: ''
   },
@@ -137,6 +138,9 @@ export const useInquiryFormStore = create((set, get) => ({
     }
     if (path === 'business.facility' && value !== 'Other') {
       updated.business = { ...updated.business, facilityOther: '' };
+    }
+    if (path === 'customer.designation' && value !== 'Other') {
+      updated.customer = { ...updated.customer, designationOther: '' };
     }
     if (path === 'visit.photos' && value === 'Not Required') {
       get().clearPhotos();
@@ -536,6 +540,7 @@ export const useInquiryFormStore = create((set, get) => ({
         facilityOther: prev.business?.facilityOther || '',
         areaSqft: prev.business?.areaSqft || '',
         floors: prev.business?.floors || '',
+        basement: prev.business?.basement || 'None',
         status: prev.business?.status || '',
         expectedDate: ''
       },
@@ -567,8 +572,15 @@ export const useInquiryFormStore = create((set, get) => ({
         uploadedAt: p.uploadedAt || new Date()
       }));
 
+      const finalCustomer = { ...cleanData.customer };
+      if (finalCustomer.designation === 'Other' && finalCustomer.designationOther) {
+        finalCustomer.designation = finalCustomer.designationOther;
+      }
+      delete finalCustomer.designationOther;
+
       const payload = {
         ...cleanData,
+        customer: finalCustomer,
         photos: cleanPhotos
       };
 

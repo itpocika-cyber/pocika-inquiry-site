@@ -39,7 +39,7 @@ export default function ReviewSummary({ formData, onEditStep }) {
               : formData.business?.customerType
         },
         { label: 'Industry/Business Type', value: formData.business?.industryType },
-        { label: 'Location/GIDC', value: formData.business?.locationGidc },
+        { label: 'City or GIDC', value: formData.business?.locationGidc },
         {
           label: 'Facility',
           value:
@@ -47,10 +47,16 @@ export default function ReviewSummary({ formData, onEditStep }) {
               ? `Other (${formData.business?.facilityOther || ''})`
               : formData.business?.facility
         },
-        { label: 'Approx. Area (Sq.Ft.)', value: formData.business?.areaSqft },
-        { label: 'Floors', value: formData.business?.floors },
-        { label: 'Project/Facility Status', value: formData.business?.status },
-        { label: 'Expected Requirement Date', value: formData.business?.expectedDate }
+        { label: 'Size (Sq.Ft.)', value: formData.business?.areaSqft },
+        {
+          label: 'Floors / Basement',
+          value: [
+            formData.business?.floors ? `${formData.business.floors} Floors` : null,
+            formData.business?.basement && formData.business.basement !== 'None' ? formData.business.basement : null
+          ].filter(Boolean).join(' + ') || formData.business?.floors
+        },
+        { label: 'Current Site Status', value: formData.business?.status },
+        { label: 'When do they need it?', value: formData.business?.expectedDate }
       ]
     },
     {
@@ -71,7 +77,7 @@ export default function ReviewSummary({ formData, onEditStep }) {
       step: 4,
       fields: [
         {
-          label: 'Approx. Requirement Value',
+          label: 'Approx. Order Value',
           value: formData.commercial?.requirementValue
             ? (String(formData.commercial.requirementValue).startsWith('₹')
                 ? formData.commercial.requirementValue
@@ -111,7 +117,7 @@ export default function ReviewSummary({ formData, onEditStep }) {
       step: 6,
       fields: [
         { label: 'Next action', value: renderArray(formData.followUp?.nextAction) },
-        { label: 'Quotation Required By', value: formData.followUp?.quotationDate },
+        { label: 'Send Quotation By', value: formData.followUp?.quotationDate },
         { label: 'Next visit/action type', value: formData.followUp?.nextVisitType },
         { label: 'Next Follow-up Date', value: formData.followUp?.followUpDate },
         { label: 'Next Action/Commitment', value: formData.followUp?.nextActionCommitment }

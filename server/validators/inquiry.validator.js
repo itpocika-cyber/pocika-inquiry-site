@@ -50,6 +50,7 @@ export const inquirySchema = z.object({
     facilityOther: optionalTrimmedString,
     areaSqft: coerceToNullableNumber,
     floors: coerceToNullableNumber,
+    basement: optionalTrimmedString,
     status: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Status is required')),
     expectedDate: optionalTrimmedString
   }),

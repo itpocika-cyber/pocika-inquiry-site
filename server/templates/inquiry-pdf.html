@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>POCIKA Inquiry {{INQUIRY_NUMBER}}</title>
   <style>
     /* Reset & Base Styles */
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
     body {
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
       color: #0F172A;
@@ -22,7 +26,7 @@
 
     @page {
       size: A4 portrait;
-      margin: 8mm 12mm 10mm 12mm;
+      margin: 22mm 10mm 11mm 10mm;
     }
 
     .no-break {
@@ -37,92 +41,107 @@
 
     /* Header Component */
     .doc-header {
-      margin-bottom: 7px;
+      margin-bottom: 8px;
       page-break-inside: avoid;
     }
+
     .header-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding-bottom: 5px;
     }
+
     .brand-left {
       display: flex;
       align-items: center;
       gap: 10px;
     }
+
     .brand-logo-img {
-      height: 34px;
+      height: 38px;
       width: auto;
-      max-width: 120px;
+      max-width: 130px;
       object-fit: contain;
       display: block;
     }
+
     .brand-info {
       display: flex;
       flex-direction: column;
     }
+
     .brand-name {
-      font-size: 11pt;
+      font-size: 11.5pt;
       font-weight: 800;
       color: #A91D22;
       letter-spacing: 0.2px;
       line-height: 1.15;
     }
+
     .brand-sub {
-      font-size: 7.5pt;
+      font-size: 7.2pt;
       color: #475569;
       font-weight: 600;
-      margin-top: 1px;
+      margin-top: 1.5px;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
     }
+
     .header-right {
       text-align: right;
     }
+
     .header-inquiry-badge {
       display: inline-block;
-      background: #F1F5F9;
+      background: #F8FAFC;
       border: 1px solid #CBD5E1;
       border-radius: 4px;
-      padding: 2px 7px;
+      padding: 2.5px 8px;
       font-size: 8pt;
       color: #334155;
     }
+
     .header-inquiry-badge strong {
       font-size: 8.5pt;
       font-weight: 800;
       color: #0F172A;
     }
+
     .header-meta {
       font-size: 7.5pt;
       color: #64748B;
       margin-top: 3px;
     }
+
     .header-meta strong {
       color: #1E293B;
     }
+
     .header-divider {
-      border-bottom: 2px solid #A91D22;
+      border-bottom: 2.5px solid #A91D22;
       width: 100%;
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
-    /* Section Cards */
+    /* Section Cards with Pocika Brand Accent */
     .section-card {
-      border: 1px solid #CBD5E1;
+      border: 1px solid #E2E8F0;
       border-radius: 5px;
-      margin-bottom: 7px;
+      margin-bottom: 6px;
       overflow: hidden;
       page-break-inside: avoid;
       break-inside: avoid;
       background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
+
     .section-card-header {
       background: #F8FAFC;
+      border-left: 3.5px solid #A91D22;
       border-bottom: 1px solid #E2E8F0;
-      padding: 4px 8px;
-      font-size: 8pt;
+      padding: 4px 10px;
+      font-size: 8.2pt;
       font-weight: 700;
       color: #0F172A;
       letter-spacing: 0.2px;
@@ -130,79 +149,158 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .section-card-body {
-      padding: 6px 8px;
+      padding: 6px 10px;
+    }
+
+    /* Sub-header within sections */
+    .sub-header-bar {
+      font-size: 7pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px dashed #CBD5E1;
+      padding-bottom: 2px;
+      margin-top: 5px;
+      margin-bottom: 4px;
+      width: 100%;
+    }
+
+    .field-grid>.sub-header-bar:first-child {
+      margin-top: 1px;
+    }
+
+    .client-lead-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      width: 100%;
+      border-bottom: 1.5px solid #F1F5F9;
+      padding-bottom: 3px;
+      margin-bottom: 3px;
+    }
+
+    .client-name {
+      font-size: 11pt;
+      font-weight: 800;
+      color: #A91D22;
+      letter-spacing: 0.2px;
+    }
+
+    .client-gst {
+      font-size: 7.5pt;
+      color: #475569;
+      font-weight: 600;
     }
 
     /* Grid Layout */
     .field-grid {
       display: flex;
       flex-wrap: wrap;
-      margin-inline: -4px;
+      margin-inline: -5px;
       row-gap: 5px;
     }
+
     .field-col-12 {
       width: 100%;
-      padding-inline: 4px;
+      padding-inline: 5px;
     }
+
     .field-col-8 {
       width: 66.666%;
-      padding-inline: 4px;
+      padding-inline: 5px;
     }
+
     .field-col-6 {
       width: 50%;
-      padding-inline: 4px;
+      padding-inline: 5px;
     }
+
     .field-col-4 {
       width: 33.333%;
-      padding-inline: 4px;
+      padding-inline: 5px;
     }
+
     .field-col-3 {
       width: 25%;
-      padding-inline: 4px;
+      padding-inline: 5px;
     }
 
     /* Labels & Values */
     .f-label {
-      font-size: 6.5pt;
+      font-size: 6.8pt;
       text-transform: uppercase;
       color: #64748B;
       font-weight: 700;
       letter-spacing: 0.4px;
-      margin-bottom: 1px;
+      margin-bottom: 3px;
     }
+
     .f-val {
-      font-size: 8pt;
-      font-weight: 500;
+      font-size: 8.5pt;
+      font-weight: 600;
       color: #0F172A;
-      line-height: 1.3;
+      line-height: 1.4;
       word-break: break-word;
     }
-    .f-val-company {
-      font-size: 9.5pt;
-      font-weight: 800;
-      color: #0F172A;
-      letter-spacing: 0.2px;
-    }
+
     .f-val-bold {
       font-weight: 700;
     }
-    .f-val-currency {
-      font-size: 9pt;
+
+    .f-val-contact {
       font-weight: 700;
       color: #0F172A;
     }
+
+    .f-designation {
+      font-size: 7.5pt;
+      color: #64748B;
+      font-weight: 500;
+    }
+
+    .f-val-currency {
+      font-size: 9.2pt;
+      font-weight: 700;
+      color: #0F172A;
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      padding: 2.5px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .f-val-date {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #0369A1;
+    }
+
+    .badge-status-pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 7.2pt;
+      font-weight: 600;
+      background: #F1F5F9;
+      color: #334155;
+      border: 1px solid #CBD5E1;
+    }
+
     .f-box {
       background: #F8FAFC;
-      border: 1px solid #E2E8F0;
+      border: 1px solid #CBD5E1;
       border-radius: 4px;
-      padding: 4px 7px;
+      padding: 4.5px 9px;
       font-size: 7.8pt;
       color: #1E293B;
-      line-height: 1.3;
+      line-height: 1.35;
       min-height: 18px;
       white-space: pre-wrap;
       word-break: break-word;
+      margin-top: 2px;
     }
 
     /* Badges & Chips */
@@ -213,6 +311,7 @@
       align-items: center;
       padding-top: 1px;
     }
+
     .chip-badge {
       display: inline-block;
       padding: 2px 7px;
@@ -221,11 +320,13 @@
       font-weight: 600;
       white-space: nowrap;
     }
+
     .chip-product {
-      background: #EFF6FF;
-      color: #1D4ED8;
-      border: 1px solid #BFDBFE;
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
     }
+
     .chip-action {
       background: #F0FDF4;
       color: #15803D;
@@ -235,75 +336,72 @@
     /* Opportunity Badges */
     .badge-opp {
       display: inline-block;
-      padding: 2px 9px;
+      padding: 2px 8px;
       border-radius: 12px;
-      font-size: 7.5pt;
+      font-size: 7.2pt;
       font-weight: 700;
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
+
     .badge-opp-hot {
       background: #FEF2F2;
       color: #DC2626;
       border: 1px solid #FECACA;
     }
+
     .badge-opp-warm {
       background: #FFFBEB;
       color: #D97706;
       border: 1px solid #FDE68A;
     }
+
     .badge-opp-cold {
       background: #F1F5F9;
       color: #475569;
       border: 1px solid #CBD5E1;
     }
+
     .badge-opp-future-potential {
       background: #EEF2FF;
       color: #4338CA;
       border: 1px solid #C7D2FE;
     }
+
     .badge-opp-dealer-development {
       background: #FAF5FF;
       color: #7E22CE;
       border: 1px solid #E9D5FF;
     }
+
     .badge-opp-no-requirement {
       background: #F8FAFC;
       color: #64748B;
       border: 1px solid #E2E8F0;
     }
 
-    /* Photos Section */
-    .photos-signatures-group {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-      break-inside: avoid-page !important;
-    }
-    .photo-section-card {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-      break-inside: avoid-page !important;
-      margin-bottom: 10px;
-    }
+    /* Photos Section Grid (Normal Document Section) */
     .photos-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
+
     .photo-card {
       border: 1px solid #E2E8F0;
-      border-radius: 4px;
+      border-radius: 5px;
       overflow: hidden;
       background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       page-break-inside: avoid !important;
       break-inside: avoid !important;
-      break-inside: avoid-page !important;
       display: flex;
       flex-direction: column;
     }
+
     .photo-img-wrap {
       width: 100%;
-      height: 120px;
+      height: 150px;
       background: #F8FAFC;
       display: flex;
       align-items: center;
@@ -311,6 +409,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .photo-img-wrap img {
       max-width: 100%;
       max-height: 100%;
@@ -320,109 +419,124 @@
       display: block;
       margin: auto;
     }
+
     .photo-tag {
       position: absolute;
-      top: 4px;
-      left: 4px;
-      background: rgba(15, 23, 42, 0.85);
+      top: 5px;
+      left: 5px;
+      background: #A91D22;
       color: #FFFFFF;
       font-size: 6.5pt;
-      font-weight: 600;
-      padding: 1px 5px;
+      font-weight: 700;
+      padding: 2px 6px;
       border-radius: 3px;
       z-index: 2;
+      letter-spacing: 0.3px;
     }
+
     .photo-caption {
-      padding: 4px 6px;
-      font-size: 6.8pt;
-      color: #475569;
-      font-weight: 500;
+      padding: 5px 8px;
+      font-size: 7pt;
+      color: #334155;
+      font-weight: 600;
       background: #ffffff;
       border-top: 1px solid #F1F5F9;
       word-break: break-word;
       text-align: center;
-      line-height: 1.2;
+      line-height: 1.25;
     }
 
-    /* Signatures Section */
+    /* Signatures Section at the very end of document */
     .signatures-block {
       margin-top: 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 5px;
+      background: #FAFAFA;
+      overflow: hidden;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
-      break-inside: avoid-page !important;
     }
+
+    .sig-header {
+      background: #F8FAFC;
+      border-left: 3.5px solid #64748B;
+      border-bottom: 1px solid #E2E8F0;
+      padding: 4px 9px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
     .sig-grid {
       display: flex;
       justify-content: space-between;
-      gap: 24px;
+      gap: 20px;
+      padding: 8px 12px;
     }
+
     .sig-col {
       flex: 1;
-      padding-top: 24px;
     }
-    .sig-line {
-      border-top: 1px solid #64748B;
-      width: 100%;
-      margin-bottom: 4px;
-    }
+
     .sig-title {
-      font-size: 7.5pt;
+      font-size: 7.2pt;
+      font-weight: 700;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .sig-name {
+      font-size: 8.8pt;
       font-weight: 700;
       color: #0F172A;
+      margin-top: 2px;
+      margin-bottom: 8px;
     }
+
+    .sig-line {
+      border-top: 1px dashed #94A3B8;
+      width: 100%;
+      margin-bottom: 3px;
+    }
+
     .sig-meta {
-      font-size: 7pt;
+      font-size: 6.8pt;
       color: #64748B;
-      margin-top: 1px;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    
-    <!-- HEADER -->
-    <header class="doc-header">
-      <div class="header-top">
-        <div class="brand-left">
-          <img src="{{LOGO_DATA_URI}}" alt="POCIKA Logo" class="brand-logo-img" />
-          <div class="brand-info">
-            <h1 class="brand-name">POCIKA FIRE &amp; SAFETY PRODUCTS LLP</h1>
-            <p class="brand-sub">Inquiry &amp; Sales Visit Form</p>
-          </div>
-        </div>
-        <div class="header-right">
-          <div class="header-inquiry-badge">Inquiry No: <strong>{{INQUIRY_NUMBER}}</strong></div>
-          <div class="header-meta">Date: <strong>{{DATE}}</strong> &nbsp;|&nbsp; Sales Person: <strong>{{SALES_PERSON}}</strong></div>
-        </div>
-      </div>
-      <div class="header-divider"></div>
-    </header>
 
-    <!-- DYNAMICALLY RENUMBERED SECTIONS (FILLED ONLY) -->
+    <!-- DYNAMICALLY RENUMBERED SECTIONS (FILLED ONLY, INCLUDING SITE PHOTOS) -->
     {{SECTIONS_CONTENT}}
 
-    <!-- SITE PHOTOS & SIGNATURES WRAPPER (PREVENTS AWKWARD BREAKS) -->
-    <div class="photos-signatures-group">
-      <!-- SITE PHOTOS -->
-      {{PHOTOS_SECTION}}
-
-      <!-- SIGNATURES BLOCK -->
-      <div class="signatures-block no-break">
-        <div class="sig-grid">
-          <div class="sig-col">
-            <div class="sig-line"></div>
-            <div class="sig-title">Sales Representative</div>
-            <div class="sig-meta">Prepared by: <strong>{{SALES_PERSON}}</strong></div>
-          </div>
-          <div class="sig-col">
-            <div class="sig-line"></div>
-            <div class="sig-title">Manager / Sales Head Review</div>
-            <div class="sig-meta">Review Status: <strong>{{MANAGER_STATUS}}</strong> {{MANAGER_REVIEW_EXTRA}}</div>
-          </div>
+    <!-- SIGNATURES BLOCK (AT THE VERY END OF THE DOCUMENT) -->
+    <div class="signatures-block no-break">
+      <div class="sig-header">
+        <span>Verification &amp; Approvals</span>
+      </div>
+      <div class="sig-grid">
+        <div class="sig-col">
+          <div class="sig-title">Sales Representative</div>
+          <div class="sig-name">{{SALES_PERSON}}</div>
+          <div class="sig-line"></div>
+          <div class="sig-meta">Recorded &amp; Submitted</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-title">Manager / Sales Head Review</div>
+          <div class="sig-name">{{MANAGER_STATUS}}</div>
+          <div class="sig-line"></div>
+          <div class="sig-meta">Review Status: <strong>{{MANAGER_STATUS}}</strong> {{MANAGER_REVIEW_EXTRA}}</div>
         </div>
       </div>
     </div>
 
   </div>
 </body>
+
 </html>

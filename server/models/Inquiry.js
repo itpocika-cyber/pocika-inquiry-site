@@ -26,6 +26,7 @@ const inquirySchema = new mongoose.Schema({
     facilityOther: { type: String, default: "" },
     areaSqft: { type: Number, default: null },
     floors: { type: Number, default: null },
+    basement: { type: String, default: "None" },
     status: { type: String, required: true },
     expectedDate: { type: String, default: "" }
   },
@@ -55,18 +56,18 @@ const inquirySchema = new mongoose.Schema({
   },
   
   visit: {
-    visitType: { type: String, required: true },
+    visitType: { type: String, default: "Site Visit" },
     personMet: { type: String, default: "" },
     requirementDiscussed: { type: String, default: "" },
-    photos: { type: String, required: true },
-    opportunity: { type: String, required: true }
+    photos: { type: String, default: "Not Required" },
+    opportunity: { type: String, default: "WARM" }
   },
   
   followUp: {
     nextAction: { type: [String], default: [] },
     nextVisitType: { type: String, default: "" },
     quotationDate: { type: String, default: "" },
-    followUpDate: { type: String, required: true },
+    followUpDate: { type: String, default: "" },
     nextActionCommitment: { type: String, default: "" },
     dealStatus: { type: String, enum: ['Pending', 'Won', 'Lost'], default: 'Pending' } // Phase 10.C
   },

@@ -211,7 +211,7 @@ export default function InquiriesList() {
               {/* Desktop Table View */}
               <div className="d-none d-lg-block table-responsive" style={{ maxHeight: '68vh', overflowY: 'auto' }}>
                 <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 2, backgroundColor: '#f8fafc' }}>
+                  <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 2, backgroundColor: 'var(--color-bg)' }}>
                     <tr>
                       <th>Inquiry No.</th>
                       <th>Date</th>

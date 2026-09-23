@@ -182,7 +182,7 @@ export default function ManageTeam() {
 
         {/* Success Banner when a user was newly created */}
         {createdSuccess && (
-          <div className="card-pocika p-4 mb-4 border-success" style={{ backgroundColor: '#f0fdf4' }}>
+          <div className="card-pocika p-4 mb-4 border-success" style={{ backgroundColor: 'var(--color-success-soft)' }}>
             <div className="d-flex justify-content-between align-items-start">
               <div>
                 <h3 className="fw-bold text-success mb-1" style={{ fontSize: '1.1rem' }}>
@@ -390,7 +390,7 @@ export default function ManageTeam() {
                                 style={{
                                   width: '38px',
                                   height: '38px',
-                                  background: u.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9'
+                                  background: u.role === 'admin' ? 'var(--color-primary)' : 'var(--color-navy-light)'
                                 }}
                               >
                                 {(u.displayName || u.email).slice(0, 2).toUpperCase()}
@@ -466,7 +466,7 @@ export default function ManageTeam() {
                             style={{
                               width: '34px',
                               height: '34px',
-                              background: u.role === 'admin' ? 'var(--color-primary)' : '#0ea5e9',
+                              background: u.role === 'admin' ? 'var(--color-primary)' : 'var(--color-navy-light)',
                               fontSize: '0.8rem'
                             }}
                           >
