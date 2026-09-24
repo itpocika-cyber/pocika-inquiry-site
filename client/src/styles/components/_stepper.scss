@@ -27,11 +27,12 @@
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 16px;
-    left: calc(50% + 20px);
-    right: calc(-50% + 20px);
+    top: 17px;
+    left: calc(50% + 22px);
+    right: calc(-50% + 22px);
     height: 2px;
     background-color: $color-border;
+    transition: background-color $transition-fast;
   }
 
   &.is-complete:not(:last-child)::after {
@@ -40,26 +41,28 @@
 }
 
 .stepper-circle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: $radius-pill;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
+  font-size: 0.8rem;
+  font-weight: 600;
   background-color: $color-white;
   border: 2px solid $color-border;
   color: $color-text-muted;
   z-index: 1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   transition: all $transition-fast;
 }
 
 .stepper-label {
   font-size: $font-size-xs;
-  font-weight: $font-weight-medium;
+  font-weight: 500;
   color: $color-text-muted;
   text-align: center;
+  transition: color $transition-fast;
 }
 
 .stepper-item.is-active {
@@ -67,17 +70,25 @@
     background-color: $color-primary;
     border-color: $color-primary;
     color: $color-white;
+    font-weight: 700;
+    box-shadow: 0 0 0 4px rgba($color-primary, 0.18);
   }
-  .stepper-label { color: $color-navy; font-weight: $font-weight-semibold; }
+  .stepper-label { 
+    color: $color-navy; 
+    font-weight: 600; 
+  }
 }
 
 .stepper-item.is-complete {
   .stepper-circle {
     background-color: $color-primary-soft;
     border-color: $color-primary;
-    color: $color-primary-dark;
+    color: $color-primary;
+    font-weight: 700;
   }
-  .stepper-label { color: $color-text; }
+  .stepper-label { 
+    color: $color-text; 
+  }
 }
 
 // Mobile condensed progress

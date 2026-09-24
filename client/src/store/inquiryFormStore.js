@@ -42,6 +42,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
+
 export const getInitialInquiryData = () => ({
   inquiryNumber: '',
   date: new Date().toISOString().split('T')[0],
@@ -485,17 +486,27 @@ export const useInquiryFormStore = create((set, get) => ({
   initDraft: () => {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
+      let baseData = getInitialInquiryData();
+      let step = 1;
+      let hasDraft = false;
+      let draftStatus = '';
+
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed?.data) {
-          set({
-            formData: { ...getInitialInquiryData(), ...parsed.data },
-            currentStep: parsed.step || 1,
-            hasRestoredDraft: true,
-            draftStatus: 'Draft restored from previous session'
-          });
+          baseData = { ...baseData, ...parsed.data };
+          step = parsed.step || 1;
+          hasDraft = true;
+          draftStatus = 'Draft restored from previous session';
         }
       }
+
+      set({
+        formData: baseData,
+        currentStep: step,
+        hasRestoredDraft: hasDraft,
+        draftStatus
+      });
     } catch (e) {
       console.warn('Draft restore error:', e);
     }

@@ -31,7 +31,21 @@ export const getCatalog = async (req, res, next) => {
 
 export const createCatalogItem = async (req, res, next) => {
   try {
-    const { name, category, description, priceRange, photo } = req.body;
+    const {
+      name,
+      category,
+      subCategory,
+      description,
+      specifications,
+      price,
+      priceHint,
+      priceRange,
+      unit,
+      imageUrl,
+      photo,
+      isActive
+    } = req.body;
+
     if (!name || !name.trim()) {
       return errorResponse(res, { code: 'VALIDATION_ERROR', message: 'Product name is required' }, 400);
     }
@@ -39,9 +53,16 @@ export const createCatalogItem = async (req, res, next) => {
     const item = await ProductCatalog.create({
       name: name.trim(),
       category: (category || '').trim(),
+      subCategory: (subCategory || '').trim(),
       description: (description || '').trim(),
-      priceRange: (priceRange || '').trim(),
-      photo: photo || { publicId: '', secureUrl: '' },
+      specifications: specifications || '',
+      price: price ? String(price).trim() : '',
+      priceHint: priceHint ? String(priceHint).trim() : (priceRange || price || ''),
+      priceRange: priceRange ? String(priceRange).trim() : (priceHint || price || ''),
+      unit: (unit || 'Piece').trim(),
+      imageUrl: (imageUrl || photo?.secureUrl || '').trim(),
+      photo: photo || (imageUrl ? { publicId: '', secureUrl: imageUrl } : { publicId: '', secureUrl: '' }),
+      isActive: isActive !== false,
       createdBy: req.user.displayName || req.user.email
     });
 
@@ -55,11 +76,33 @@ export const updateCatalogItem = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = {};
-    ['name', 'category', 'description', 'priceRange', 'photo', 'isActive'].forEach((field) => {
+    const allowedFields = [
+      'name',
+      'category',
+      'subCategory',
+      'description',
+      'specifications',
+      'price',
+      'priceHint',
+      'priceRange',
+      'unit',
+      'imageUrl',
+      'photo',
+      'isActive'
+    ];
+
+    allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
       }
     });
+
+    // Keep photo and imageUrl in sync
+    if (updateData.imageUrl && !updateData.photo?.secureUrl) {
+      updateData.photo = { publicId: '', secureUrl: updateData.imageUrl };
+    } else if (updateData.photo?.secureUrl && !updateData.imageUrl) {
+      updateData.imageUrl = updateData.photo.secureUrl;
+    }
 
     const item = await ProductCatalog.findByIdAndUpdate(id, { $set: updateData }, { new: true });
     if (!item) {

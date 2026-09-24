@@ -80,6 +80,10 @@ export default function InquiryForm() {
   const [isCustomCompetitor, setIsCustomCompetitor] = useState(false);
 
   useEffect(() => {
+    initDraft();
+  }, []);
+
+  useEffect(() => {
     if (
       formData.customer?.designation &&
       !standardDesignations.includes(formData.customer.designation) &&
@@ -149,7 +153,6 @@ export default function InquiryForm() {
   const [historyDismissed, setHistoryDismissed] = useState(false);
 
   useEffect(() => {
-    initDraft();
     if (user && !formData.salesPerson) {
       setField('salesPerson', user.displayName || user.email);
     }
@@ -336,6 +339,7 @@ export default function InquiryForm() {
             <strong>Failed to submit inquiry:</strong> {submissionError}
           </div>
         )}
+
 
         {/* Offline Warning Banner */}
         {isOffline && (
@@ -954,8 +958,8 @@ export default function InquiryForm() {
             {/* STEP 3: Product / Requirement */}
             {currentStep === 3 && (
               <section className="form-step-panel card-pocika p-4">
-                <div className="d-flex justify-content-between align-items-center mb-3 p-2 px-3 rounded-2 border" style={{ backgroundColor: 'var(--color-primary-soft)', borderColor: 'var(--color-border)' }}>
-                  <span className="small text-primary fw-medium">
+                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 p-2 px-3 rounded-2 border" style={{ backgroundColor: 'var(--color-primary-soft)', borderColor: 'var(--color-primary-border)' }}>
+                  <span className="small fw-semibold" style={{ color: 'var(--color-primary)' }}>
                     Specific product requirement: <strong>Yes</strong>
                   </span>
                   <button
@@ -994,14 +998,9 @@ export default function InquiryForm() {
                                 }
                               }}
                             />
-                            <span className="product-card-label">{prod}</span>
+                            <span className="product-card-label">{prod.replace(/\//g, ' / ')}</span>
                             {isSelected && (
-                              <span
-                                className="badge bg-primary text-white ms-auto"
-                                style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px' }}
-                              >
-                                ✓
-                              </span>
+                              <span className="product-card-check">✓</span>
                             )}
                           </label>
                         </div>
@@ -1115,11 +1114,10 @@ export default function InquiryForm() {
 
                 {/* AMC / Contract Expiry Date Tracker */}
                 <div
-                  className={`field-group mt-4 p-3 rounded-3 border ${
-                    formData.products?.includes('AMC/Refilling/Maintenance')
+                  className={`field-group mt-4 p-3 rounded-3 border ${formData.products?.includes('AMC/Refilling/Maintenance')
                       ? 'border-primary'
                       : ''
-                  }`}
+                    }`}
                   style={{
                     transition: 'all 0.2s ease',
                     backgroundColor: formData.products?.includes('AMC/Refilling/Maintenance')
@@ -1175,9 +1173,8 @@ export default function InquiryForm() {
                         <button
                           key={shortcut.label}
                           type="button"
-                          className={`btn-pocika btn-sm py-1 px-3 ${
-                            isSelected ? 'btn-pocika-primary' : 'btn-pocika-secondary'
-                          }`}
+                          className={`btn-pocika btn-sm py-1 px-3 ${isSelected ? 'btn-pocika-primary' : 'btn-pocika-secondary'
+                            }`}
                           style={{ fontSize: '0.8rem', height: '36px', borderRadius: '8px' }}
                           onClick={() => setField('requirement.renewalDueDate', targetDate)}
                         >
@@ -1870,8 +1867,8 @@ export default function InquiryForm() {
       </div>
 
       {/* Mobile Sticky Bottom Navigation */}
-      <div className="stepper-mobile d-lg-none mt-4 px-3 bg-white border-top py-2 position-sticky bottom-0 z-3">
-        <div className="d-flex gap-2 form-actions">
+      <div className="mobile-form-actions-bar d-lg-none">
+        <div className="d-flex gap-2">
           <button
             type="button"
             className="btn-pocika btn-pocika-secondary flex-grow-1"

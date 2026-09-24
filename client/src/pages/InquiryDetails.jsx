@@ -747,10 +747,11 @@ export default function InquiryDetails() {
               </div>
 
               <form onSubmit={handleAddComment}>
-                <div className="input-group">
+                <div className="d-flex gap-2 align-items-center">
                   <input
                     type="text"
-                    className="form-control-pocika"
+                    className="form-control-pocika flex-grow-1"
+                    style={{ minWidth: 0 }}
                     placeholder="Add an internal note or reply to sales/admin..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
@@ -758,7 +759,7 @@ export default function InquiryDetails() {
                   />
                   <button
                     type="submit"
-                    className="btn-pocika btn-pocika-primary"
+                    className="btn-pocika btn-pocika-primary text-nowrap"
                     disabled={submittingComment || !newComment.trim()}
                   >
                     {submittingComment ? 'Posting...' : 'Post'}

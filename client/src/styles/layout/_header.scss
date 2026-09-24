@@ -2,14 +2,23 @@
 @use '../abstracts/mixins' as *;
 
 .app-header {
-  height: $header-height;
-  background-color: $color-white;
-  border-bottom: 1px solid $color-border;
-  display: flex;
-  align-items: center;
   position: sticky;
   top: 0;
-  z-index: 30;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: $header-height;
+  min-height: $header-height;
+  background-color: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid $color-border;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+  display: flex;
+  align-items: center;
+  z-index: 1030;
+  flex-shrink: 0;
+  transition: box-shadow $transition-fast;
 }
 
 .app-header-inner {
@@ -26,22 +35,28 @@
   display: flex;
   align-items: center;
   gap: $space-2;
+  text-decoration: none;
 
   img {
-    height: 36px;
+    height: 38px;
     width: auto;
+    object-fit: contain;
   }
 
   .app-logo-text {
-    display: none;
+    display: inline;
     font-weight: $font-weight-bold;
     color: $color-navy;
-    font-size: $font-size-md;
+    font-size: 1.05rem;
     letter-spacing: 0.02em;
 
     @include up($bp-md) {
-      display: inline;
+      font-size: $font-size-md;
     }
+  }
+
+  &:hover {
+    text-decoration: none;
   }
 }
 

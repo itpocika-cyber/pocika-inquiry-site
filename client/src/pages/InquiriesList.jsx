@@ -208,10 +208,10 @@ export default function InquiriesList() {
             />
           ) : (
             <>
-              {/* Desktop Table View */}
-              <div className="d-none d-lg-block table-responsive" style={{ maxHeight: '68vh', overflowY: 'auto' }}>
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 2, backgroundColor: 'var(--color-bg)' }}>
+              {/* Desktop Table View with Horizontal Slider */}
+              <div className="d-none d-lg-block table-slider-container" style={{ maxHeight: '68vh' }}>
+                <table className="table-pocika-data">
+                  <thead>
                     <tr>
                       <th>Inquiry No.</th>
                       <th>Date</th>
@@ -301,13 +301,15 @@ export default function InquiriesList() {
                           </td>
                           <td>{formatDate(inq.followUp?.followUpDate)}</td>
                           <td className="text-end">
-                            <Link
-                              to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                              className={`btn-pocika btn-sm ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-ghost'}`}
-                              onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
-                            >
-                              View &rarr;
-                            </Link>
+                            <div className="table-actions">
+                              <Link
+                                to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                                className={`btn btn-sm ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-secondary'}`}
+                                onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
+                              >
+                                View
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -316,77 +318,82 @@ export default function InquiriesList() {
                 </table>
               </div>
 
-              {/* Mobile Cards View */}
-              <div className="d-lg-none d-flex flex-column gap-3">
+              {/* Mobile Sleek Modern List View */}
+              <div className="d-lg-none mobile-inquiry-list mb-3">
                 {hasDraft && currentPage === 1 && !search && !opportunity && (
-                  <div className="border border-warning rounded-3 p-3 bg-warning-subtle">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="badge bg-warning text-dark">DRAFT</span>
-                      <Link to="/inquiry" className="btn-pocika btn-pocika-primary btn-sm">
-                        Resume &rarr;
-                      </Link>
+                  <Link
+                    to="/inquiry"
+                    className="mobile-inquiry-item bg-warning-subtle text-decoration-none"
+                  >
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div>
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <span className="badge bg-warning text-dark">DRAFT</span>
+                          <span className="fw-bold text-dark small">Unsaved visit draft</span>
+                        </div>
+                        <div className="text-muted small">Tap to resume where you left off</div>
+                      </div>
+                      <span className="mobile-inquiry-chevron text-warning">&rsaquo;</span>
                     </div>
-                    <div className="fw-bold">Unsaved draft in progress</div>
-                    <div className="text-muted small">Continue where you left off.</div>
-                  </div>
+                  </Link>
                 )}
 
                 {inquiries.map((inq) => {
                   const unviewed = isNewInquiry(inq);
                   return (
-                    <div
+                    <Link
                       key={inq._id || inq.inquiryNumber}
-                      className={`border rounded-3 p-3 bg-white ${unviewed ? 'border-danger border-2' : ''}`}
+                      to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                      className={`mobile-inquiry-item ${unviewed ? 'is-unviewed' : ''}`}
+                      onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
                     >
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <span className="fw-bold fs-6 d-inline-flex align-items-center gap-1">
-                          {inq.inquiryNumber}
-                          {unviewed && (
-                            <span
-                              className="badge bg-danger text-white rounded-pill ms-1"
-                              style={{ fontSize: '0.62rem', padding: '2px 6px' }}
-                            >
-                              ● NEW
+                      <div className="d-flex align-items-center justify-content-between gap-2">
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <div className="d-flex align-items-center gap-1 mb-1">
+                            <span className="mobile-inquiry-company text-truncate">
+                              {inq.customer?.companyName || 'Unknown Company'}
                             </span>
-                          )}
-                        </span>
-                        <div className="d-flex gap-1 align-items-center">
-                          <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
-                            {inq.visit?.opportunity}
-                          </span>
-                          <span
-                            className={`badge ${
-                              inq.followUp?.dealStatus === 'Won'
-                                ? 'bg-success'
-                                : inq.followUp?.dealStatus === 'Lost'
-                                ? 'bg-danger'
-                                : 'bg-warning text-dark'
-                            }`}
-                            style={{ fontSize: '0.68rem' }}
-                          >
-                            {inq.followUp?.dealStatus || 'Pending'}
-                          </span>
+                            {unviewed && (
+                              <span
+                                className="badge rounded-pill text-white flex-shrink-0"
+                                style={{ fontSize: '0.58rem', padding: '2px 5px', backgroundColor: 'var(--color-primary)' }}
+                              >
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          <div className="mobile-inquiry-meta text-truncate">
+                            <span className="fw-semibold" style={{ color: 'var(--color-navy)' }}>{inq.inquiryNumber}</span>
+                            {inq.customer?.siteLocation && (
+                              <> · <span>{inq.customer.siteLocation}</span></>
+                            )}
+                            <span> · {formatDate(inq.date)}</span>
+                          </div>
+                        </div>
+                        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                          <div className="d-flex flex-column align-items-end gap-1">
+                            <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`} style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
+                              {inq.visit?.opportunity || '-'}
+                            </span>
+                            <span
+                              className={`badge ${
+                                inq.followUp?.dealStatus === 'Won'
+                                  ? 'bg-success'
+                                  : inq.followUp?.dealStatus === 'Lost'
+                                  ? 'bg-danger'
+                                  : 'bg-warning text-dark'
+                              }`}
+                              style={{ fontSize: '0.64rem', padding: '2px 5px' }}
+                            >
+                              {inq.followUp?.dealStatus || 'Pending'}
+                            </span>
+                          </div>
+                          <span className="mobile-inquiry-chevron">&rsaquo;</span>
                         </div>
                       </div>
-                    <div className="fw-semibold mb-1">{inq.customer?.companyName}</div>
-                    <div className="text-muted small mb-2">
-                      {inq.customer?.siteLocation} · {formatDate(inq.date)}
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center pt-2 border-top">
-                      <span className="text-helper small">
-                        Follow-up: {formatDate(inq.followUp?.followUpDate)}
-                      </span>
-                      <Link
-                        to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                        className={`btn-pocika btn-sm ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-secondary'}`}
-                        onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
-                      >
-                        View Details &rarr;
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
+                    </Link>
+                  );
+                })}
               </div>
 
               {/* Pagination Controls */}

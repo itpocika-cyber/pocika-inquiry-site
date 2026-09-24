@@ -49,8 +49,8 @@ export default function Dashboard() {
 
         if (sumRes.data) setSummary(sumRes.data);
         if (inqRes.data?.items) {
-          // Dashboard shows only recent 5 inquiries
-          setRecentInquiries(inqRes.data.items.slice(0, 5));
+          // Dashboard shows top 10 recent inquiries
+          setRecentInquiries(inqRes.data.items.slice(0, 10));
         }
         if (fuRes.data?.items) {
           setAllFollowUps(fuRes.data.items);
@@ -315,7 +315,7 @@ export default function Dashboard() {
                     </span>
                   )}
                 </div>
-                <Link to="/inquiries" className="btn-pocika btn-pocika-ghost btn-sm" title="View complete searchable list of all inquiries">
+                <Link to="/inquiries" className="btn-pocika btn-pocika-ghost btn-sm d-none d-sm-inline-flex" title="View complete searchable list of all inquiries">
                   View All Inquiries ({summary.total || recentInquiries.length}) &rarr;
                 </Link>
               </div>
@@ -331,10 +331,10 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop Table View */}
-                  <div className="d-none d-md-block table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                      <thead className="table-light">
+                  {/* Desktop Table View with Custom Horizontal Slider (Same as Admin) */}
+                  <div className="d-none d-md-block table-slider-container mb-3">
+                    <table className="table-pocika-data">
+                      <thead>
                         <tr>
                           <th>Inquiry No.</th>
                           <th>Date</th>
@@ -352,19 +352,20 @@ export default function Dashboard() {
                           return (
                             <tr
                               key={inq._id || inq.inquiryNumber}
-                              style={unviewed ? { backgroundColor: 'rgba(255, 237, 237, 0.35)' } : {}}
+                              style={unviewed ? { backgroundColor: 'rgba(197, 34, 31, 0.04)' } : {}}
                             >
                               <td className="fw-semibold">
                                 <Link
                                   to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                                  className="text-primary text-decoration-none d-inline-flex align-items-center gap-1"
+                                  className="text-decoration-none fw-semibold d-inline-flex align-items-center gap-1"
+                                  style={{ color: 'var(--color-navy)' }}
                                   onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
                                 >
                                   {inq.inquiryNumber || '-'}
                                   {unviewed && (
                                     <span
-                                      className="badge bg-danger text-white rounded-pill ms-1"
-                                      style={{ fontSize: '0.60rem', padding: '2px 6px', letterSpacing: '0.4px' }}
+                                      className="badge rounded-pill text-white ms-1"
+                                      style={{ fontSize: '0.60rem', padding: '2px 6px', letterSpacing: '0.4px', backgroundColor: 'var(--color-primary)' }}
                                       title="New unviewed inquiry"
                                     >
                                       ● NEW
@@ -373,7 +374,7 @@ export default function Dashboard() {
                                 </Link>
                               </td>
                               <td>{formatDate(inq.date)}</td>
-                              <td className="fw-medium text-truncate" style={{ maxWidth: '160px' }}>
+                              <td className="fw-medium text-truncate" style={{ maxWidth: '180px' }}>
                                 {inq.customer?.companyName || 'Unknown'}
                               </td>
                               <td>
@@ -417,61 +418,79 @@ export default function Dashboard() {
                     </table>
                   </div>
 
-                  {/* Mobile Cards View */}
-                  <div className="d-md-none d-flex flex-column gap-3">
+                  {/* Mobile Sleek Modern List View (No bulky box-in-a-box) */}
+                  <div className="d-md-none mobile-inquiry-list mb-3">
                     {recentInquiries.map((inq) => {
                       const unviewed = isNewInquiry(inq);
                       return (
-                        <div
+                        <Link
                           key={inq._id || inq.inquiryNumber}
-                          className={`border rounded-3 p-3 bg-white ${unviewed ? 'border-danger border-2' : ''}`}
+                          to={`/inquiries/${inq.inquiryNumber || inq._id}`}
+                          className={`mobile-inquiry-item ${unviewed ? 'is-unviewed' : ''}`}
+                          onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
                         >
-                          <div className="d-flex justify-content-between align-items-start mb-2">
-                            <span className="fw-bold d-inline-flex align-items-center gap-1">
-                              {inq.inquiryNumber}
-                              {unviewed && (
-                                <span
-                                  className="badge bg-danger text-white rounded-pill ms-1"
-                                  style={{ fontSize: '0.62rem', padding: '2px 6px' }}
-                                >
-                                  ● NEW
+                          <div className="d-flex align-items-center justify-content-between gap-2">
+                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                              <div className="d-flex align-items-center gap-1 mb-1">
+                                <span className="mobile-inquiry-company text-truncate">
+                                  {inq.customer?.companyName || 'Unknown Company'}
                                 </span>
-                              )}
-                            </span>
-                            <div className="d-flex gap-1">
-                              <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`}>
-                                {inq.visit?.opportunity}
-                              </span>
-                              <span
-                                className={`badge ${
-                                  inq.followUp?.dealStatus === 'Won'
-                                    ? 'bg-success'
-                                    : inq.followUp?.dealStatus === 'Lost'
-                                    ? 'bg-danger'
-                                    : 'bg-warning text-dark'
-                                }`}
-                                style={{ fontSize: '0.65rem' }}
-                              >
-                                {inq.followUp?.dealStatus || 'Pending'}
-                              </span>
+                                {unviewed && (
+                                  <span
+                                    className="badge rounded-pill text-white flex-shrink-0"
+                                    style={{ fontSize: '0.58rem', padding: '2px 5px', backgroundColor: 'var(--color-primary)' }}
+                                  >
+                                    NEW
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mobile-inquiry-meta text-truncate">
+                                <span className="fw-semibold" style={{ color: 'var(--color-navy)' }}>{inq.inquiryNumber}</span>
+                                {inq.customer?.siteLocation && (
+                                  <> · <span>{inq.customer.siteLocation}</span></>
+                                )}
+                                <span> · {formatDate(inq.date)}</span>
+                              </div>
+                            </div>
+                            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                              <div className="d-flex flex-column align-items-end gap-1">
+                                <span className={`badge-pocika ${getOppBadge(inq.visit?.opportunity)}`} style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
+                                  {inq.visit?.opportunity || '-'}
+                                </span>
+                                <span
+                                  className={`badge ${
+                                    inq.followUp?.dealStatus === 'Won'
+                                      ? 'bg-success'
+                                      : inq.followUp?.dealStatus === 'Lost'
+                                      ? 'bg-danger'
+                                      : 'bg-warning text-dark'
+                                  }`}
+                                  style={{ fontSize: '0.64rem', padding: '2px 5px' }}
+                                >
+                                  {inq.followUp?.dealStatus || 'Pending'}
+                                </span>
+                              </div>
+                              <span className="mobile-inquiry-chevron">&rsaquo;</span>
                             </div>
                           </div>
-                          <div className="fw-semibold text-truncate mb-1">
-                            {inq.customer?.companyName}
-                          </div>
-                          <div className="text-muted small mb-2">
-                            {inq.customer?.siteLocation} · {formatDate(inq.date)}
-                          </div>
-                          <Link
-                            to={`/inquiries/${inq.inquiryNumber || inq._id}`}
-                            className={`btn-pocika btn-sm w-100 ${unviewed ? 'btn-pocika-primary' : 'btn-pocika-secondary'}`}
-                            onClick={() => markInquiryAsViewed(inq._id, inq.inquiryNumber)}
-                          >
-                            View Details &rarr;
-                          </Link>
-                        </div>
+                        </Link>
                       );
                     })}
+                  </div>
+
+                  {/* View All Inquiries Action Footer */}
+                  <div className="pt-2 pb-1 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span className="text-muted small">
+                      Showing {recentInquiries.length} of {summary.total || recentInquiries.length} inquiries
+                    </span>
+                    <Link
+                      to="/inquiries"
+                      className="btn-pocika btn-pocika-secondary btn-sm px-3 d-inline-flex align-items-center gap-1"
+                      title="View complete searchable list of all inquiries"
+                    >
+                      <span>View All Inquiries</span>
+                      <span aria-hidden="true">&rarr;</span>
+                    </Link>
                   </div>
                 </>
               )}

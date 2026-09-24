@@ -3,7 +3,11 @@
 
 .card-pocika {
   @include card-surface;
-  padding: $space-5;
+  padding: 1rem;
+
+  @include up($bp-sm) {
+    padding: $space-5;
+  }
 }
 
 .card-pocika-header {
@@ -79,4 +83,71 @@
     font-size: $font-size-xs;
     color: $color-text-muted;
   }
+}
+
+// Sleek Mobile Inquiry List View (Replaces clunky box-type cards)
+.mobile-inquiry-list {
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
+  margin-bottom: $space-3;
+}
+
+.mobile-inquiry-item {
+  display: block;
+  padding: 13px 4px;
+  border-bottom: 1px solid $color-border-light;
+  text-decoration: none;
+  background-color: transparent;
+  transition: background-color $transition-fast, padding-left $transition-fast;
+
+  &:first-child {
+    padding-top: 6px;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover,
+  &:active {
+    background-color: #F8FAFC;
+    text-decoration: none;
+  }
+
+  &.is-unviewed {
+    background-color: rgba(29, 78, 216, 0.04);
+    border-left: 3px solid $color-primary;
+    padding-left: 10px;
+    border-radius: 6px;
+  }
+}
+
+.mobile-inquiry-company {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $color-navy;
+  line-height: 1.3;
+}
+
+.mobile-inquiry-meta {
+  font-size: 0.78rem;
+  color: $color-text-muted;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.mobile-inquiry-chevron {
+  font-size: 1.4rem;
+  color: #94A3B8;
+  line-height: 1;
+  font-weight: 300;
+  transition: transform $transition-fast, color $transition-fast;
+}
+
+.mobile-inquiry-item:active .mobile-inquiry-chevron {
+  transform: translateX(3px);
+  color: $color-primary;
 }
