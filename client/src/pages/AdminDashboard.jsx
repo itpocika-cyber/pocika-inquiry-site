@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Book, Bell, Download, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, Book, Bell, Download, Menu, AlertTriangle, Zap } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import api from '../api/client';

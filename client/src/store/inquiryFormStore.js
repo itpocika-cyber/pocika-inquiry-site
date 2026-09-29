@@ -565,35 +565,35 @@ export const useInquiryFormStore = create((set, get) => ({
     const { formData } = get();
     set({ isSubmitting: true, submissionError: null });
 
+    const { hasProductRequirement, ...cleanData } = formData;
+    const cleanPhotos = (formData.photos || []).map(p => ({
+      photoId: p.photoId || crypto.randomUUID(),
+      publicId: p.publicId || '',
+      secureUrl: p.secureUrl || p.url || p.previewUrl,
+      url: p.secureUrl || p.url || p.previewUrl,
+      caption: p.caption || p.fileName || p.originalFileName || '',
+      fileName: p.fileName || p.originalFileName || '',
+      originalFileName: p.originalFileName || p.fileName || '',
+      previewUrl: p.secureUrl || p.url || p.previewUrl,
+      sizeKB: p.sizeKB || 0,
+      latitude: p.latitude || null,
+      longitude: p.longitude || null,
+      uploadedAt: p.uploadedAt || new Date()
+    }));
+
+    const finalCustomer = { ...cleanData.customer };
+    if (finalCustomer.designation === 'Other' && finalCustomer.designationOther) {
+      finalCustomer.designation = finalCustomer.designationOther;
+    }
+    delete finalCustomer.designationOther;
+
+    const payload = {
+      ...cleanData,
+      customer: finalCustomer,
+      photos: cleanPhotos
+    };
+
     try {
-      // 1. Prepare clean payload including durable photo records
-      const { hasProductRequirement, ...cleanData } = formData;
-      const cleanPhotos = (formData.photos || []).map(p => ({
-        photoId: p.photoId || crypto.randomUUID(),
-        publicId: p.publicId || '',
-        secureUrl: p.secureUrl || p.url || p.previewUrl,
-        url: p.secureUrl || p.url || p.previewUrl,
-        caption: p.caption || p.fileName || p.originalFileName || '',
-        fileName: p.fileName || p.originalFileName || '',
-        originalFileName: p.originalFileName || p.fileName || '',
-        previewUrl: p.secureUrl || p.url || p.previewUrl,
-        sizeKB: p.sizeKB || 0,
-        latitude: p.latitude || null,
-        longitude: p.longitude || null,
-        uploadedAt: p.uploadedAt || new Date()
-      }));
-
-      const finalCustomer = { ...cleanData.customer };
-      if (finalCustomer.designation === 'Other' && finalCustomer.designationOther) {
-        finalCustomer.designation = finalCustomer.designationOther;
-      }
-      delete finalCustomer.designationOther;
-
-      const payload = {
-        ...cleanData,
-        customer: finalCustomer,
-        photos: cleanPhotos
-      };
 
       // Check if browser is currently offline
       if (typeof navigator !== 'undefined' && !navigator.onLine) {

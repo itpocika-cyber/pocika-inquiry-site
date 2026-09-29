@@ -63,13 +63,20 @@ export const getInquiries = async (req, res, next) => {
 
     // Search across multiple text fields
     if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
-      query.$or = [
+      const searchRegex = new RegExp(req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const searchOr = [
         { inquiryNumber: searchRegex },
         { 'customer.companyName': searchRegex },
         { 'customer.contactPerson': searchRegex },
         { 'customer.siteLocation': searchRegex }
       ];
+      if (query.$or) {
+        // Combine role-scope $or with search $or using $and to avoid overwriting
+        query.$and = [{ $or: query.$or }, { $or: searchOr }];
+        delete query.$or;
+      } else {
+        query.$or = searchOr;
+      }
     }
 
     if (req.query.opportunity) {
@@ -474,7 +481,7 @@ export const getSummary = async (req, res, next) => {
       ]
     });
 
-     & 10.H: Current Month KPIs & Conversion Tracking
+    // Current Month KPIs & Conversion Tracking
     const monthStartStr = todayStr.substring(0, 7) + '-01';
     const monthQuery = { ...baseQuery, date: { $gte: monthStartStr } };
 
@@ -537,7 +544,7 @@ export const getSummary = async (req, res, next) => {
       warm,
       pendingFollowUps,
       quotes,
-       additions
+
       thisMonth: {
         total: totalThisMonth,
         hot: hotThisMonth,
@@ -691,7 +698,7 @@ export const exportInquiriesExcel = async (req, res, next) => {
       query.salesPerson = req.query.salesPerson;
     }
     if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
+      const searchRegex = new RegExp(req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       query.$or = [
         { inquiryNumber: searchRegex },
         { 'customer.companyName': searchRegex },

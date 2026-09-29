@@ -19,7 +19,7 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data;
+      const { token, user } = response;
       
       localStorage.setItem('pocika_token', token);
       localStorage.setItem('pocika_user', JSON.stringify(user));
@@ -47,7 +47,7 @@ export const useAuthStore = create((set, get) => ({
 
     try {
       const response = await api.get('/auth/me');
-      const user = response.data.user;
+      const user = response.data?.user || response.user;
       localStorage.setItem('pocika_user', JSON.stringify(user));
       set({ user, isAuthenticated: true });
       return user;

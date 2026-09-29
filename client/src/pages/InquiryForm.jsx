@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Info, ChevronDown } from 'lucide-react';
+import { Clock, Info, ChevronDown, AlertTriangle, Zap } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Stepper from '../components/Stepper';
