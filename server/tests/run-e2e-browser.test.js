@@ -24,7 +24,7 @@ async function runFullE2ETest() {
     // Connect to MongoDB to verify database writes directly
     console.log('\n[1/10] Connecting to MongoDB to verify database records...');
     mongoConnection = await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 15000 });
-    console.log('✅ Connected to MongoDB Atlas:', mongoConnection.connection.host);
+    console.log('[SUCCESS] Connected to MongoDB Atlas:', mongoConnection.connection.host);
 
     console.log('\n[2/10] Launching Real Chromium Browser...');
     browser = await puppeteer.launch({
@@ -40,7 +40,7 @@ async function runFullE2ETest() {
       const text = msg.text();
       consoleLogs.push(`[Browser ${msg.type()}] ${text}`);
       if (msg.type() === 'error') {
-        console.error('  ⚠️ Browser Console Error:', text);
+        console.error('  [WARNING] Browser Console Error:', text);
       }
     });
 
@@ -70,7 +70,7 @@ async function runFullE2ETest() {
       throw new Error(`Expected redirection to dashboard.html, but got: ${currentUrl}`);
     }
     await page.screenshot({ path: path.join(screenshotsDir, '02-dashboard-after-login.png') });
-    console.log('✅ PASS: Salesperson authenticated and landed on dashboard.html');
+    console.log('[SUCCESS] PASS: Salesperson authenticated and landed on dashboard.html');
 
     // -------------------------------------------------------------
     // STEP 2: TEST FORM VALIDATION (DELIBERATE INVALID DATA)
@@ -92,7 +92,7 @@ async function runFullE2ETest() {
       throw new Error('Validation failed: Empty required fields were not marked with error styles!');
     }
     await page.screenshot({ path: path.join(screenshotsDir, '03-form-validation-errors.png') });
-    console.log('✅ PASS: Client-side validation correctly blocked progression and highlighted errors');
+    console.log('[SUCCESS] PASS: Client-side validation correctly blocked progression and highlighted errors');
 
     // -------------------------------------------------------------
     // STEP 3: FILL SALES INQUIRY FORM WITH REAL UNIQUE TEST DATA
@@ -199,7 +199,7 @@ async function runFullE2ETest() {
       throw new Error('Review screen is missing critical inquiry fields!');
     }
     await page.screenshot({ path: path.join(screenshotsDir, '05-review-screen.png') });
-    console.log('✅ PASS: Review screen accurately reflected all entered values and photo thumbnail');
+    console.log('[SUCCESS] PASS: Review screen accurately reflected all entered values and photo thumbnail');
 
     // -------------------------------------------------------------
     // STEP 4: SUBMIT FORM & VERIFY SUCCESS PAGE
@@ -233,7 +233,7 @@ async function runFullE2ETest() {
     }
 
     await page.screenshot({ path: path.join(screenshotsDir, '06-success-page.png') });
-    console.log('✅ PASS: Inquiry submitted and assigned number:', createdInquiryNumber);
+    console.log('[SUCCESS] PASS: Inquiry submitted and assigned number:', createdInquiryNumber);
 
     // -------------------------------------------------------------
     // STEP 5: VERIFY DATABASE (MONGODB ATLAS)
@@ -266,7 +266,7 @@ async function runFullE2ETest() {
     if (doc.commercial?.expectedOrderValue !== 123456.78) {
       throw new Error(`MongoDB expectedOrderValue mismatch! Got: ${doc.commercial?.expectedOrderValue}`);
     }
-    console.log('✅ PASS: MongoDB document matches browser submission 100%');
+    console.log('[SUCCESS] PASS: MongoDB document matches browser submission 100%');
 
     // -------------------------------------------------------------
     // STEP 6: VERIFY INQUIRIES LIST & VIEW PAGE
@@ -285,7 +285,7 @@ async function runFullE2ETest() {
       throw new Error(`Newly created inquiry ${createdInquiryNumber} does not appear in inquiries.html table!`);
     }
     await page.screenshot({ path: path.join(screenshotsDir, '07-inquiries-list.png') });
-    console.log(`✅ PASS: Inquiry ${createdInquiryNumber} correctly displayed in inquiries.html`);
+    console.log(`[SUCCESS] PASS: Inquiry ${createdInquiryNumber} correctly displayed in inquiries.html`);
 
     // Navigate to Details page
     console.log('  Opening inquiry details page...');
@@ -308,7 +308,7 @@ async function runFullE2ETest() {
       throw new Error('Inquiry Details page is missing verified inquiry data!');
     }
     await page.screenshot({ path: path.join(screenshotsDir, '08-inquiry-details.png') });
-    console.log('✅ PASS: Inquiry Details page accurately displays customer, requirements, values, and photo');
+    console.log('[SUCCESS] PASS: Inquiry Details page accurately displays customer, requirements, values, and photo');
 
     // -------------------------------------------------------------
     // STEP 7: EDIT INQUIRY & VERIFY UPDATES
@@ -353,7 +353,7 @@ async function runFullE2ETest() {
       throw new Error('MongoDB was not updated with new expectedOrderValue!');
     }
     await page.screenshot({ path: path.join(screenshotsDir, '10-view-after-edit.png') });
-    console.log('✅ PASS: Edit Inquiry updated both live UI and MongoDB Atlas document');
+    console.log('[SUCCESS] PASS: Edit Inquiry updated both live UI and MongoDB Atlas document');
 
     // -------------------------------------------------------------
     // STEP 8: ADMIN DASHBOARD & CROSS-ROLE VERIFICATION
@@ -395,7 +395,7 @@ async function runFullE2ETest() {
     }
 
     await page.screenshot({ path: path.join(screenshotsDir, '11-admin-dashboard.png') });
-    console.log(`✅ PASS: Admin successfully viewed inquiry ${createdInquiryNumber} in Admin Dashboard`);
+    console.log(`[SUCCESS] PASS: Admin successfully viewed inquiry ${createdInquiryNumber} in Admin Dashboard`);
 
     // Verify Admin can view inquiry details
     await page.goto(`${BASE_URL}/pages/inquiry-details.html?id=${createdInquiryNumber}`, { waitUntil: 'networkidle2' });
@@ -407,14 +407,14 @@ async function runFullE2ETest() {
       throw new Error('Admin inquiry details view failed to load full inquiry content!');
     }
     await page.screenshot({ path: path.join(screenshotsDir, '12-admin-inquiry-details.png') });
-    console.log('✅ PASS: Admin can view and inspect full details of the inquiry');
+    console.log('[SUCCESS] PASS: Admin can view and inspect full details of the inquiry');
 
     console.log('\n===============================================================');
     console.log('ALL E2E BROWSER TESTS COMPLETED AND VERIFIED 100% SUCCESSFULLY!');
     console.log('===============================================================');
 
   } catch (err) {
-    console.error('\n❌ E2E TEST FAILED:', err.message);
+    console.error('\n[ERROR] E2E TEST FAILED:', err.message);
     if (page && !page.isClosed()) {
       await page.screenshot({ path: path.join(screenshotsDir, 'error-state.png') }).catch(() => {});
     }

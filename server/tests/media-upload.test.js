@@ -23,7 +23,7 @@ let baseUrl;
 let adminToken;
 let testInquiryNumber;
 
-describe('Phase 9 Critical Verification Suite', () => {
+describe('Critical Verification Suite', () => {
 
   before(async () => {
     if (mongoose.connection.readyState === 0) {

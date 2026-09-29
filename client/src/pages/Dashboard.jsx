@@ -275,7 +275,7 @@ export default function Dashboard() {
                   style={{ background: 'var(--color-danger-soft)' }}
                 >
                   <div className="d-flex align-items-center gap-2">
-                    <span className="fs-5">⚠️</span>
+                    <AlertTriangle size={20} className="text-warning" />
                     <div>
                       <span className="fw-bold text-danger">
                         {summary.staleLeadsCount} Lead{summary.staleLeadsCount > 1 ? 's' : ''} Need Attention

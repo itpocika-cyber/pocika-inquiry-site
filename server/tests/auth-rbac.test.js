@@ -23,11 +23,11 @@ const results = {
 function recordTest(title, passed, details = '') {
   if (passed) {
     results.passed++;
-    console.log(`  ✅ PASS: ${title}`);
+    console.log(`  [SUCCESS] PASS: ${title}`);
     results.tests.push({ title, status: 'PASS', details });
   } else {
     results.failed++;
-    console.error(`  ❌ FAIL: ${title} - ${details}`);
+    console.error(`  [ERROR] FAIL: ${title} - ${details}`);
     results.tests.push({ title, status: 'FAIL', details });
   }
 }
@@ -55,10 +55,7 @@ async function request(endpoint, options = {}) {
 }
 
 async function runTests() {
-  console.log('\n===============================================================');
-  console.log('POCIKA SYSTEM — PHASE 8 AUTOMATED TEST SUITE');
-  console.log('Firebase Authentication + RBAC + Protected Routes');
-  console.log('===============================================================\n');
+  console.log('Running Authentication & RBAC Test Suite...\n');
 
   // Start ephemeral server
   await new Promise((resolve) => {
@@ -421,9 +418,7 @@ async function runTests() {
     }
   }
 
-  console.log('\n===============================================================');
-  console.log(`TEST RESULTS: ${results.passed} PASSED | ${results.failed} FAILED`);
-  console.log('===============================================================\n');
+  console.log(`\nTEST RESULTS: ${results.passed} PASSED | ${results.failed} FAILED\n`);
 
   if (results.failed > 0) {
     process.exit(1);

@@ -40,12 +40,12 @@ const inquirySchema = new mongoose.Schema({
     currentBrand: { type: String, default: "" },
     currentPurchase: { type: String, default: "" },
     reason: { type: String, default: "" },
-    renewalDueDate: { type: String, default: "" } // Phase 10.B: YYYY-MM-DD
+    renewalDueDate: { type: String, default: "" } //  YYYY-MM-DD
   },
   
   commercial: {
-    requirementValue: { type: mongoose.Schema.Types.Mixed, default: null }, // Phase 10.J: Number or bracket string
-    expectedOrderValue: { type: mongoose.Schema.Types.Mixed, default: null }, // Phase 10.J: Number or bracket string
+    requirementValue: { type: mongoose.Schema.Types.Mixed, default: null }, //  Number or bracket string
+    expectedOrderValue: { type: mongoose.Schema.Types.Mixed, default: null }, //  Number or bracket string
     budget: { type: String, default: "" },
     paymentTerms: { type: String, default: "" },
     decisionMakerName: { type: String, default: "" },
@@ -69,7 +69,7 @@ const inquirySchema = new mongoose.Schema({
     quotationDate: { type: String, default: "" },
     followUpDate: { type: String, default: "" },
     nextActionCommitment: { type: String, default: "" },
-    dealStatus: { type: String, enum: ['Pending', 'Won', 'Lost'], default: 'Pending' } // Phase 10.C
+    dealStatus: { type: String, enum: ['Pending', 'Won', 'Lost'], default: 'Pending' } 
   },
   
   remarks: { type: String, default: "" },
@@ -80,8 +80,8 @@ const inquirySchema = new mongoose.Schema({
     secureUrl: { type: String, default: '' },
     url: { type: String, default: '' },
     caption: { type: String, default: '' },
-    latitude: { type: Number, default: null }, // Phase 10.F: optional GPS tag
-    longitude: { type: Number, default: null }, // Phase 10.F: optional GPS tag
+    latitude: { type: Number, default: null }, //  optional GPS tag
+    longitude: { type: Number, default: null }, //  optional GPS tag
     resourceType: { type: String, default: 'image' },
     format: { type: String, default: 'jpg' },
     width: { type: Number, default: 0 },
@@ -106,13 +106,13 @@ const inquirySchema = new mongoose.Schema({
   },
 
   managerReview: {
-    status: { type: String, enum: ['Pending', 'Reviewed', 'Needs Follow-up', 'Approved', 'Rejected'], default: 'Pending' }, // Phase 10.L
+    status: { type: String, enum: ['Pending', 'Reviewed', 'Needs Follow-up', 'Approved', 'Rejected'], default: 'Pending' }, 
     reviewedBy: { type: String, default: '' },
     reviewedAt: { type: Date, default: null },
     remarks: { type: String, default: '' }
   },
 
-  comments: [{ // Phase 10.M: Per-inquiry internal/external comment thread
+  comments: [{ //  Per-inquiry internal/external comment thread
     commentId: { type: String, default: () => crypto.randomUUID() },
     text: { type: String, required: true },
     author: {

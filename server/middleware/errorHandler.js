@@ -72,6 +72,8 @@ export const errorHandler = (err, req, res, next) => {
 
   return errorResponse(res, {
     code: 'SERVER_ERROR',
-    message: err.message || 'Server Error'
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Internal Server Error' 
+      : (err.message || 'Server Error')
   }, err.statusCode || 500);
 };

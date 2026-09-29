@@ -195,7 +195,7 @@ export const useInquiryFormStore = create((set, get) => ({
   addPhotoFiles: async (files, coords = null) => {
     const { formData } = get();
     const maxPhotos = 5;
-    const maxBytes = 10 * 1024 * 1024; // 10 MB per Phase 9 spec
+    const maxBytes = 10 * 1024 * 1024; // 10 MB per spec
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
     const existingPhotos = [...(formData.photos || [])];

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, Book, Bell, Download, Menu } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import api from '../api/client';
@@ -86,7 +87,7 @@ export default function AdminDashboard() {
     try {
       const params = new URLSearchParams({
         page: currentPage,
-        limit: 25, // 25 rows per page per Phase 10 spec
+        limit: 25, // 25 rows per page per spec
         sort
       });
 
@@ -348,28 +349,15 @@ export default function AdminDashboard() {
 
         <div className="admin-nav py-3">
           <Link to="/admin-dashboard" className="admin-nav-item active">
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
+            <LayoutDashboard className="admin-nav-icon" />
             Dashboard
           </Link>
           <Link to="/admin/team" className="admin-nav-item">
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <Users className="admin-nav-icon" />
             Manage Sales Team
           </Link>
           <Link to="/admin/catalog" className="admin-nav-item">
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-            </svg>
+            <Book className="admin-nav-icon" />
             Product Catalog
           </Link>
           <button
@@ -377,10 +365,7 @@ export default function AdminDashboard() {
             className="admin-nav-item w-100 text-start border-0 bg-transparent"
             onClick={() => setShowAnnouncementModal(true)}
           >
-            <svg className="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <Bell className="admin-nav-icon" />
             Post Announcement
           </button>
         </div>
@@ -438,11 +423,7 @@ export default function AdminDashboard() {
               onClick={handleExportExcel}
               title="Download filtered inquiries as Excel spreadsheet"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Download size={15} className="me-1" />
               <span>
                 {exportingExcel ? (
                   'Exporting...'
@@ -455,12 +436,7 @@ export default function AdminDashboard() {
               </span>
             </button>
             <Link to="/admin/team" className="btn btn-sm btn-pocika-secondary">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <Users size={15} className="me-1" />
               <span className="d-none d-sm-inline">Manage Team</span>
               <span className="d-sm-none">Team</span>
             </Link>
@@ -1058,7 +1034,7 @@ export default function AdminDashboard() {
                               onClick={() => handleOpenReschedule(inq)}
                               title="Quickly change follow-up date without leaving"
                             >
-                              ⚡ Reschedule
+                              <Zap size={16} className="me-1 d-inline-block" /> Reschedule
                             </button>
                             <Link
                               to={`/inquiries/${inq.inquiryNumber || inq._id}`}
@@ -1120,7 +1096,7 @@ export default function AdminDashboard() {
               >
                 <div>
                   <div className="d-flex align-items-center gap-2">
-                    <span className="fs-5">⚠️</span>
+                    <AlertTriangle size={20} className="text-warning" />
                     <span className="fw-bold small text-danger">
                       Needs Attention / Stale Leads
                     </span>

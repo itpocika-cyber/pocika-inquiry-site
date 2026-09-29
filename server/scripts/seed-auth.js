@@ -51,7 +51,7 @@ async function seedAuthUsers() {
       console.log(`Created admin account: ${admin.email}`);
     }
 
-    console.log('\n✅ Auth seed complete:');
+    console.log('\n[SUCCESS] Auth seed complete:');
     console.log(`• Admin: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
     console.log('• Dummy sales accounts: 0 (All sales/manager accounts are now created via Admin UI)');
 

@@ -24,9 +24,7 @@ const ADMIN_EMAIL = 'pocika@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Pocika@2026';
 
 async function freshSystemReset() {
-  console.log('====================================================');
-  console.log('       POCIKA SYSTEM FRESH RESET UTILITY            ');
-  console.log('====================================================\n');
+  console.log('\nStarting System Fresh Reset Utility...\n');
 
   try {
     // ----------------------------------------------------
@@ -52,9 +50,9 @@ async function freshSystemReset() {
         nextCursor = listResult.next_cursor;
       } while (nextCursor);
 
-      console.log(`✅ Cloudinary cleaned successfully! Total assets removed: ${totalDeleted}\n`);
+      console.log(`[SUCCESS] Cloudinary cleaned successfully! Total assets removed: ${totalDeleted}\n`);
     } else {
-      console.log('⚠️ Cloudinary credentials not found in .env, skipping media cleanup.\n');
+      console.log('[WARNING] Cloudinary credentials not found in .env, skipping media cleanup.\n');
     }
 
     // ----------------------------------------------------
@@ -184,9 +182,8 @@ async function freshSystemReset() {
     });
     console.log('   Initialized default announcement.');
 
-    console.log('\n====================================================');
-    console.log('          ✅ FRESH RESET COMPLETED SUCCESSFULLY!    ');
-    console.log('====================================================');
+    console.log('\n[SUCCESS] FRESH RESET COMPLETED SUCCESSFULLY!');
+    console.log('--------------------------------------');
     console.log('1. Cloudinary: Completely clean (0 old assets).');
     console.log('2. MongoDB Collections:');
     console.log('   • users: 1 Clean Master Admin');
@@ -196,12 +193,12 @@ async function freshSystemReset() {
     console.log(`   • counters:  Reset to 0 (Next: PSI-${new Date().getFullYear()}-000001)`);
     console.log('   • productcatalogs: Standard Fire & Safety product line initialized');
     console.log('   • announcements: Clean initial welcome message');
-    console.log('====================================================\n');
+    console.log('--------------------------------------\n');
 
     await mongoose.disconnect();
     process.exit(0);
   } catch (err) {
-    console.error('\n❌ Fresh reset failed:', err);
+    console.error('\n[ERROR] Fresh reset failed:', err);
     process.exit(1);
   }
 }

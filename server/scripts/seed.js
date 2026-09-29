@@ -112,7 +112,7 @@ async function seedSingleSampleInquiry() {
     };
 
     const created = await Inquiry.create(sampleInquiry);
-    console.log(`\n✅ Successfully seeded 1 realistic sample inquiry:`);
+    console.log(`\n[SUCCESS] Successfully seeded 1 realistic sample inquiry:`);
     console.log(`• Inquiry Number: ${created.inquiryNumber}`);
     console.log(`• Company: ${created.customer.companyName}`);
     console.log(`• Contact: ${created.customer.contactPerson} (${created.customer.mobile})`);

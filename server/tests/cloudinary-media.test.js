@@ -1,5 +1,5 @@
 /**
- * Phase 9 Cloudinary Media Architecture Automated Test Suite
+ * Cloudinary Media Architecture Automated Test Suite
  * Tests:
  * 1. Cloudinary URL generation & transformation paths (thumbnail, preview, full, pdf)
  * 2. Strict MIME type & size restrictions (JPEG/PNG/WebP, max 10MB, max 5 photos)
@@ -24,7 +24,7 @@ import {
 } from '../controllers/upload.controller.js';
 import mongoose from 'mongoose';
 
-describe('Phase 9: Cloudinary Media Architecture Tests', () => {
+describe(' Cloudinary Media Architecture Tests', () => {
 
   describe('1. Cloudinary Asset Paths & URL Generation', () => {
     it('should generate all 4 optimized variants (thumbnail, preview, full, pdf)', () => {

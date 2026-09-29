@@ -93,7 +93,6 @@ npm run build
 ---
 
 ## Documentation
-- [Phase 4 Verification Report](docs/phase4-verification.md)
 - [Canonical Field Mapping](docs/field-mapping.md)
 - [Design System](docs/design-system.md)
 

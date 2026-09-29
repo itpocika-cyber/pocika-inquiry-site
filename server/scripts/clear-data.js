@@ -18,7 +18,7 @@ async function clearAllInquiries() {
     const deleted = await Inquiry.deleteMany({});
     await Counter.deleteMany({});
 
-    console.log(`\n✅ Database Inquiries Cleared:`);
+    console.log(`\n[SUCCESS] Database Inquiries Cleared:`);
     console.log(`• Removed ${deleted.deletedCount} inquiries.`);
     console.log(`• Reset inquiry number counter to 0 (next entry will be PSI-${new Date().getFullYear()}-000001).`);
     console.log(`• Users and Admin accounts were kept safe.\n`);

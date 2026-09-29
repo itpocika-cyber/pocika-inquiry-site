@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Clock, Info, ChevronDown } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Stepper from '../components/Stepper';
@@ -344,7 +345,7 @@ export default function InquiryForm() {
         {/* Offline Warning Banner */}
         {isOffline && (
           <div className="alert-pocika alert-warning mb-4 d-flex align-items-center gap-2">
-            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+            <AlertTriangle size={20} className="text-warning" />
             <div>
               <strong>Working offline.</strong> You can complete and submit this visit without internet. It will be saved locally on your device and automatically synced once you're back online.
             </div>
@@ -372,10 +373,7 @@ export default function InquiryForm() {
                       className="btn-pocika btn-pocika-ghost btn-sm text-primary"
                       onClick={() => setShowHistoryModal(true)}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="me-1">
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
+                      <Clock size={15} className="me-1" />
                       {historyMatches.length} Previous Visit{historyMatches.length > 1 ? 's' : ''}
                     </button>
                   )}
@@ -385,11 +383,7 @@ export default function InquiryForm() {
                 {historyMatches.length > 0 && !historyDismissed && (
                   <div className="alert-pocika alert-info mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
                     <div className="d-flex align-items-center flex-wrap gap-2">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
+                      <Info size={20} />
                       <span>
                         We found <strong>{historyMatches.length}</strong> previous visit{historyMatches.length > 1 ? 's' : ''} to this company.
                       </span>
@@ -409,7 +403,7 @@ export default function InquiryForm() {
                           setHistoryDismissed(true);
                         }}
                       >
-                        ⚡ Start new visit using this company's details &rarr;
+                        <Zap size={16} className="me-1 d-inline-block" /> Start new visit using this company's details &rarr;
                       </button>
                     </div>
                     <button
@@ -506,9 +500,7 @@ export default function InquiryForm() {
                               setField('customer.designation', '');
                             }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <ChevronDown size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (
@@ -1233,9 +1225,7 @@ export default function InquiryForm() {
                               setField('commercial.requirementValue', '');
                             }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <ChevronDown size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (
@@ -1291,9 +1281,7 @@ export default function InquiryForm() {
                               setField('commercial.expectedOrderValue', '');
                             }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <ChevronDown size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (
@@ -1366,9 +1354,7 @@ export default function InquiryForm() {
                               setField('commercial.paymentTerms', '');
                             }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <ChevronDown size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (
@@ -1415,9 +1401,7 @@ export default function InquiryForm() {
                               setField('commercial.competitors', '');
                             }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
+                            <ChevronDown size={18} strokeWidth={2.5} />
                           </button>
                         </div>
                       ) : (

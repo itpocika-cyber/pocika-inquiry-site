@@ -19,7 +19,7 @@ let server;
 let baseUrl;
 let authToken;
 
-describe('HOTFIX VERIFICATION SUITE: Photo Upload + Product Selection + 8-Step Form', () => {
+describe('Inquiry Flow Integration Suite: Form + Photo Upload', () => {
 
   before(async () => {
     if (mongoose.connection.readyState !== 1) {

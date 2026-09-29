@@ -25,7 +25,7 @@ let testInquiryId;
 let testCatalogId;
 let testAnnouncementId;
 
-describe('Phase 10 Add-on Features Verification Suite', () => {
+describe('Add-on Features Verification Suite', () => {
 
   before(async () => {
     if (mongoose.connection.readyState === 0) {
@@ -101,7 +101,7 @@ describe('Phase 10 Add-on Features Verification Suite', () => {
         body: JSON.stringify({
           date: new Date().toISOString().split('T')[0],
           customer: {
-            companyName: 'Phase 10 Test Enterprise',
+            companyName: 'Test Enterprise',
             contactPerson: 'Harshil Patel',
             mobile: '9898012345',
             siteLocation: 'Sanand GIDC'
@@ -150,7 +150,7 @@ describe('Phase 10 Add-on Features Verification Suite', () => {
       assert.equal(res.status, 200);
       const json = await res.json();
       assert.ok(Array.isArray(json.data.items));
-      const found = json.data.items.some(i => i.customer.companyName === 'Phase 10 Test Enterprise');
+      const found = json.data.items.some(i => i.customer.companyName === 'Test Enterprise');
       assert.ok(found, 'Should find inquiry with renewal due in 15 days');
     });
   });

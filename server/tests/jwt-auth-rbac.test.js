@@ -18,7 +18,7 @@ function createToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
 }
 
-describe('Phase 4: JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => {
+describe(' JWT Auth + RBAC + MongoDB Inquiry Architecture Tests', () => {
 
   before(async () => {
     await new Promise((resolve) => {

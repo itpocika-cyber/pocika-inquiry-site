@@ -9,7 +9,7 @@ import {
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 
 const MAX_PHOTOS = 5;
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per Phase 9 spec
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB per spec
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
 // Memory storage keeps uploaded files in RAM as Buffers (clean, no orphaned disk temp files)

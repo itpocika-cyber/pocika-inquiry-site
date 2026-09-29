@@ -80,17 +80,17 @@ export const getInquiries = async (req, res, next) => {
       query.status = req.query.status;
     }
 
-    // Deal Status Filter (Phase 10.C)
+    // Deal Status Filter 
     if (req.query.dealStatus) {
       query['followUp.dealStatus'] = req.query.dealStatus;
     }
 
-    // Manager Review Status Filter (Phase 10.L)
+    // Manager Review Status Filter 
     if (req.query.managerStatus) {
       query['managerReview.status'] = req.query.managerStatus;
     }
 
-    // Renewal Due Date Filter (Phase 10.B)
+    // Renewal Due Date Filter 
     if (req.query.renewalsDueInDays) {
       const days = parseInt(req.query.renewalsDueInDays, 10) || 30;
       const today = new Date().toISOString().split('T')[0];
@@ -100,7 +100,7 @@ export const getInquiries = async (req, res, next) => {
       query['requirement.renewalDueDate'] = { $exists: true, $nin: ['', null] };
     }
 
-    // Stale Leads Filter (Phase 10.E: followUpDate < today and dealStatus is Pending)
+    // Stale Leads Filter ( followUpDate < today and dealStatus is Pending)
     if (req.query.isStale === 'true') {
       const today = new Date().toISOString().split('T')[0];
       query['followUp.followUpDate'] = { $lt: today };
@@ -474,7 +474,7 @@ export const getSummary = async (req, res, next) => {
       ]
     });
 
-    // Phase 10.C & 10.H: Current Month KPIs & Conversion Tracking
+     & 10.H: Current Month KPIs & Conversion Tracking
     const monthStartStr = todayStr.substring(0, 7) + '-01';
     const monthQuery = { ...baseQuery, date: { $gte: monthStartStr } };
 
@@ -489,21 +489,21 @@ export const getSummary = async (req, res, next) => {
     const closedThisMonth = wonThisMonth + lostThisMonth;
     const conversionRate = closedThisMonth > 0 ? Math.round((wonThisMonth / closedThisMonth) * 100) : 0;
 
-    // Phase 10.B: Renewals Due Soon (next 30 days)
+    //  Renewals Due Soon (next 30 days)
     const in30DaysStr = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
     const renewalsDueSoon = await Inquiry.countDocuments({
       ...baseQuery,
       'requirement.renewalDueDate': { $gte: todayStr, $lte: in30DaysStr }
     });
 
-    // Phase 10.E: Stale Leads Count (overdue & pending deal status)
+    //  Stale Leads Count (overdue & pending deal status)
     const staleLeadsCount = await Inquiry.countDocuments({
       ...baseQuery,
       'followUp.followUpDate': { $lt: todayStr },
       'followUp.dealStatus': { $in: ['Pending', null, ''] }
     });
 
-    // Phase 10.D: Sales Performance Summary (Admin/Manager only)
+    //  Sales Performance Summary (Admin/Manager only)
     let salesPerformance = [];
     if (['admin', 'super_admin', 'manager'].includes(req.user.role)) {
       const perfAgg = await Inquiry.aggregate([
@@ -537,7 +537,7 @@ export const getSummary = async (req, res, next) => {
       warm,
       pendingFollowUps,
       quotes,
-      // Phase 10 additions
+       additions
       thisMonth: {
         total: totalThisMonth,
         hot: hotThisMonth,
@@ -622,7 +622,7 @@ export const downloadInquiryPdf = async (req, res, next) => {
 };
 
 /**
- * Phase 10.M: Add a comment to an inquiry thread
+ *  Add a comment to an inquiry thread
  */
 export const addInquiryComment = async (req, res, next) => {
   try {
@@ -676,7 +676,7 @@ export const addInquiryComment = async (req, res, next) => {
 };
 
 /**
- * Phase 10.H: Export Inquiries to Excel (.xlsx) with Active Filters
+ *  Export Inquiries to Excel (.xlsx) with Active Filters
  */
 export const exportInquiriesExcel = async (req, res, next) => {
   try {
