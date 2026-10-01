@@ -93,7 +93,7 @@ export const authenticateUser = async (req, res, next) => {
         email: user.email,
         displayName: user.displayName || user.email.split('@')[0],
         photoURL: user.photoURL || '',
-        role: user.role,
+        role: user.role || 'sales_person',
         isActive: user.isActive
       };
     } else {

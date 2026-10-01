@@ -17,7 +17,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager') {
+      if (user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'manager') {
         navigate('/admin-dashboard', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
@@ -38,7 +38,7 @@ export default function Login() {
 
     try {
       const loggedUser = await login(email, password);
-      if (loggedUser.role === 'admin' || loggedUser.role === 'super_admin' || loggedUser.role === 'manager') {
+      if (loggedUser?.role === 'admin' || loggedUser?.role === 'super_admin' || loggedUser?.role === 'manager') {
         navigate('/admin-dashboard');
       } else {
         navigate('/dashboard');

@@ -71,8 +71,7 @@ export const login = async (req, res, next) => {
       }, 403);
     }
 
-    user.lastLoginAt = new Date();
-    await user.save();
+    await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
 
     const token = createToken(user);
 
@@ -83,7 +82,7 @@ export const login = async (req, res, next) => {
       email: user.email,
       displayName: user.displayName || user.email.split('@')[0],
       photoURL: user.photoURL || '',
-      role: user.role,
+      role: user.role || 'sales_person',
       isActive: user.isActive
     };
 
@@ -133,7 +132,7 @@ export const register = async (req, res, next) => {
       email: user.email,
       displayName: user.displayName,
       photoURL: user.photoURL || '',
-      role: user.role,
+      role: user.role || 'sales_person',
       isActive: user.isActive
     };
 
@@ -163,7 +162,7 @@ export const getMe = async (req, res, next) => {
       email: req.user.email,
       displayName: req.user.displayName,
       photoURL: req.user.photoURL,
-      role: req.user.role,
+      role: req.user.role || 'sales_person',
       isActive: req.user.isActive
     };
 
