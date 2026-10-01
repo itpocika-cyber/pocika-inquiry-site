@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const ADMIN_EMAIL = 'admin@pocika.com';
-const ADMIN_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Admin@Pocika2026!';
+const ADMIN_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Pocika@2122';
 
 async function seedAuthUsers() {
   try {

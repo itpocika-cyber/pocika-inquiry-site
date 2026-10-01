@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Clock, Info, ChevronDown, AlertTriangle, Zap } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -49,6 +49,8 @@ const standardCompetitors = [
 
 export default function InquiryForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const cloneId = searchParams.get('cloneId');
   const { user } = useAuthStore();
   const {
     currentStep,
@@ -81,8 +83,32 @@ export default function InquiryForm() {
   const [isCustomCompetitor, setIsCustomCompetitor] = useState(false);
 
   useEffect(() => {
-    initDraft();
-  }, []);
+    if (cloneId) {
+      const fetchAndClone = async () => {
+        try {
+          const res = await api.get(`/inquiries/${cloneId}`);
+          if (res.data) {
+            const old = res.data;
+            clearDraft();
+            setField('parentInquiryId', old._id);
+            Object.keys(old.customer || {}).forEach(k => setField(`customer.${k}`, old.customer[k]));
+            Object.keys(old.business || {}).forEach(k => setField(`business.${k}`, old.business[k]));
+            setField('products', old.products || []);
+            setField('productOther', old.productOther || '');
+            Object.keys(old.requirement || {}).forEach(k => setField(`requirement.${k}`, old.requirement[k]));
+            Object.keys(old.commercial || {}).forEach(k => setField(`commercial.${k}`, old.commercial[k]));
+            setField('date', new Date().toISOString().split('T')[0]);
+          }
+        } catch (err) {
+          console.error("Failed to clone inquiry", err);
+          initDraft();
+        }
+      };
+      fetchAndClone();
+    } else {
+      initDraft();
+    }
+  }, [cloneId]);
 
   useEffect(() => {
     if (

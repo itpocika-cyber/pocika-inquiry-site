@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import AdminLayout from '../components/AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import api from '../api/client';
@@ -201,8 +200,8 @@ export default function SalesMemberDetail() {
   const totalPages = Math.ceil(totalInquiries / 10) || 1;
 
   return (
-    <div className="app-shell">
-      <Header />
+    <AdminLayout title="Back to Sales Team">
+      <div>
 
       <main className="container-app section-block flex-grow-1">
         {/* Breadcrumb Navigation */}
@@ -403,8 +402,7 @@ export default function SalesMemberDetail() {
           </>
         )}
       </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

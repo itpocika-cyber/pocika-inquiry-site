@@ -795,3 +795,37 @@ export const exportInquiriesExcel = async (req, res, next) => {
     next(error);
   }
 };
+
+
+export const logNextVisit = async (req, res) => {
+  try {
+    let inquiry = null;
+    if (req.params.id.startsWith('PSI-') || req.params.id.startsWith('INQ-')) {
+      inquiry = await Inquiry.findOne({ inquiryNumber: req.params.id });
+    } else {
+      inquiry = await Inquiry.findById(req.params.id);
+    }
+    if (!inquiry) return res.status(404).json({ message: 'Inquiry not found' });
+
+    inquiry.visitHistory.push({
+      date: inquiry.date,
+      salesPerson: inquiry.salesPerson,
+      visit: inquiry.visit,
+      followUp: inquiry.followUp,
+      remarks: inquiry.remarks,
+      loggedAt: new Date()
+    });
+
+    const newData = req.body;
+    inquiry.date = newData.date || inquiry.date;
+    inquiry.salesPerson = newData.salesPerson || inquiry.salesPerson;
+    if (newData.visit) inquiry.visit = { ...inquiry.visit, ...newData.visit };
+    if (newData.followUp) inquiry.followUp = { ...inquiry.followUp, ...newData.followUp };
+    if (newData.remarks !== undefined) inquiry.remarks = newData.remarks;
+
+    await inquiry.save();
+    res.json(inquiry);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import AdminLayout from '../components/AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import api from '../api/client';
@@ -153,10 +152,8 @@ export default function ManageTeam() {
   };
 
   return (
-    <div className="app-shell">
-      <Header />
-
-      <main className="container-app section-block">
+    <AdminLayout title="Manage Sales Team">
+      <div>
         {/* Top Header */}
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
           <div>
@@ -550,9 +547,7 @@ export default function ManageTeam() {
             )}
           </div>
         )}
-      </main>
-
-      <Footer />
+      
 
       {/* Add Member Modal */}
       {showAddModal && (
@@ -656,5 +651,6 @@ export default function ManageTeam() {
         </div>
       )}
     </div>
+    </AdminLayout>
   );
 }

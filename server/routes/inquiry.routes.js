@@ -1,5 +1,5 @@
 import express from 'express';
-import {
+import { 
   createInquiry,
   getInquiries,
   getInquiryById,
@@ -8,7 +8,8 @@ import {
   downloadInquiryPdf,
   getCompanyHistory,
   exportInquiriesExcel,
-  addInquiryComment
+  addInquiryComment,
+  logNextVisit
 } from '../controllers/inquiry.controller.js';
 import {
   uploadMiddleware,
@@ -31,6 +32,7 @@ router.get('/:id', authenticateUser, getInquiryById);
 router.get('/:id/pdf', authenticateUser, downloadInquiryPdf);
 router.patch('/:id', authenticateUser, validateInquiryUpdate, updateInquiry);
 router.post('/:id/comments', authenticateUser, addInquiryComment);
+router.post('/:id/next-visit', authenticateUser, logNextVisit);
 
 // Photo endpoints
 router.post('/:id/photos', authenticateUser, uploadMiddleware, uploadInquiryPhotos);

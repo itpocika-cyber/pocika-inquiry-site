@@ -99,6 +99,29 @@ const inquirySchema = new mongoose.Schema({
     uploadedAt: { type: Date, default: Date.now },
     sortOrder: { type: Number, default: 0 }
   }],
+
+  visitHistory: [{
+    date: String,
+    salesPerson: String,
+    visit: {
+      visitType: String,
+      personMet: String,
+      requirementDiscussed: String,
+      photos: String,
+      opportunity: String
+    },
+    followUp: {
+      nextAction: [String],
+      nextVisitType: String,
+      quotationDate: String,
+      followUpDate: String,
+      nextActionCommitment: String,
+      dealStatus: String
+    },
+    remarks: String,
+    loggedAt: { type: Date, default: Date.now }
+  }],
+
   
   submissionMeta: {
     confirmedBy: { type: String, default: 'System' },
@@ -123,6 +146,8 @@ const inquirySchema = new mongoose.Schema({
     },
     createdAt: { type: Date, default: Date.now }
   }],
+
+  parentInquiryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inquiry', default: null },
 
   companyKey: { type: String, index: true, default: '' },
 

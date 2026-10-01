@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { Image as ImageIcon } from 'lucide-react';
 
 export default function PhotoUploader({
   photos,
@@ -88,7 +89,7 @@ export default function PhotoUploader({
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21 15 16 10 5 21" />
             </svg>
-            <span><Image size={16} className="me-1 d-inline-block" /> Choose from Gallery</span>
+            <span><ImageIcon size={16} className="me-1 d-inline-block" /> Choose from Gallery</span>
           </button>
           <input
             ref={galleryInputRef}

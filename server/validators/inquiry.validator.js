@@ -22,6 +22,7 @@ const optionalTrimmedString = z.preprocess(
 export const inquirySchema = z.object({
   date: z.preprocess((val) => String(val || '').trim(), z.string().min(1, 'Date is required')),
   salesPerson: optionalTrimmedString,
+  parentInquiryId: z.string().nullable().optional().default(null),
   status: z.enum(['draft', 'submitted']).optional().default('submitted'),
   
   customer: z.object({

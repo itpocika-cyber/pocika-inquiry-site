@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import AdminLayout from '../components/AdminLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
 import api from '../api/client';
@@ -113,11 +114,10 @@ export default function InquiriesList() {
     }
   };
 
-  return (
-    <div className="app-shell">
-      <Header />
+  
+  const content = (
+    <div className={!isAdmin ? "container-app section-block" : ""}>
 
-      <main className="container-app section-block">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
           <div>
             <h1 className="text-page-title mb-1">{isAdmin ? 'All Inquiries' : 'My Inquiries'}</h1>
@@ -423,9 +423,20 @@ export default function InquiriesList() {
             </>
           )}
         </div>
-      </main>
+      
+    </div>
+  );
 
+  if (isAdmin) {
+    return <AdminLayout title="All Inquiries">{content}</AdminLayout>;
+  }
+
+  return (
+    <div className="app-shell">
+      <Header />
+      {content}
       <Footer />
     </div>
   );
+
 }

@@ -30,8 +30,13 @@ export class ErrorBoundary extends React.Component {
             </div>
             <h3 className="fw-bold mb-2">Something went wrong</h3>
             <p className="text-muted mb-4">
-              An unexpected interface error occurred. You can safely reload the page or return to the dashboard.
+              An unexpected interface error occurred.
             </p>
+            <div className="text-start bg-light p-3 rounded mb-4" style={{ overflowX: 'auto', fontSize: '12px', color: 'red' }}>
+              <strong>{this.state.error && this.state.error.toString()}</strong>
+              <br />
+              <pre>{this.state.error && this.state.error.stack}</pre>
+            </div>
             <div className="d-flex gap-3 justify-content-center">
               <button
                 type="button"

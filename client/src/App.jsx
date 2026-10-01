@@ -66,7 +66,7 @@ export default function App() {
         <Route
           path="/inquiry"
           element={
-            <ProtectedRoute allowedRoles={['sales_person']}>
+            <ProtectedRoute allowedRoles={['sales_person', 'admin', 'super_admin', 'manager']}>
               <InquiryForm />
             </ProtectedRoute>
           }
